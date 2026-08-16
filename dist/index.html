@@ -10,12 +10,218 @@
     <meta property="og:type" content="website">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="assets/index-DQkovbkl.js"></script>
-    <link rel="stylesheet" crossorigin href="assets/index-CyO5xLZb.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/brochure.css">
     <link rel="icon" type="image/png" href="assets/favicon.png">
   </head>
-  <body class="bg-[#FAF9F5] text-[#0A0A0A] antialiased">
-    <div id="root"></div>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a href="/" class="logo" aria-label="Celestial Goods home">
+          <span class="logo-main">Celestial</span>
+          <span class="logo-sub">Goods</span>
+        </a>
+        <nav class="nav" aria-label="Main navigation">
+          <a href="#story">Our Story</a>
+          <a href="#products">Products</a>
+          <a href="#contact">Contact</a>
+        </nav>
+        <a href="/shop.html" class="btn btn-primary">Shop Now</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container hero-grid">
+          <div class="hero-content">
+            <div class="hero-logo logo">
+              <span class="logo-main">Celestial</span>
+              <span class="logo-sub">Goods</span>
+            </div>
+            <p class="hero-tagline">Connecting Farmers to the World</p>
+            <p class="hero-desc">
+              Authentic, unrefined delicacies crafted with traditional heritage recipes.
+              Sourced directly from local farmers in Kolhapur, Bihar, and the Western Ghats.
+            </p>
+            <div class="hero-actions">
+              <a href="/shop.html" class="btn btn-gold">Explore Products</a>
+              <a href="#contact" class="btn btn-outline">Order via WhatsApp</a>
+            </div>
+          </div>
+          <div class="hero-image">
+            <img
+              src="assets/organic_jaggery_hero_1785581871908-B_1vChWj.jpg"
+              alt="Organic sugarcane jaggery blocks from Kolhapur"
+              width="800"
+              height="600"
+            >
+          </div>
+        </div>
+      </section>
+
+      <section id="story" class="section section-alt">
+        <div class="container">
+          <span class="section-label">Our Story</span>
+          <h2 class="section-title">From Farm to Your Table</h2>
+          <p class="section-lead">
+            Celestial Goods was born from a simple belief: that the finest foods come directly
+            from the hands of those who grow them. We partner with farmers across India to bring
+            you pure, chemical-free products made the way nature intended.
+          </p>
+          <div class="story-grid">
+            <article class="story-card">
+              <h3>Direct Farmer Support</h3>
+              <p>
+                Directly empowering regional Indian farmers and native artisans across
+                Kolhapur and Bihar — ensuring fair prices and sustainable livelihoods.
+              </p>
+            </article>
+            <article class="story-card">
+              <h3>Heritage Recipes</h3>
+              <p>
+                Chemical-free traditional jaggery and unrefined local produce crafted
+                in small iron vats, using methods passed down through generations.
+              </p>
+            </article>
+            <article class="story-card">
+              <h3>100% Natural</h3>
+              <p>
+                No chemicals, no shortcuts. Every product is organic, locally sourced,
+                and traditionally made — pure goodness you can taste and trust.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="products" class="section">
+        <div class="container">
+          <span class="section-label">Our Products</span>
+          <h2 class="section-title">Artisanal Delicacies</h2>
+          <p class="section-lead">
+            Premium organic and handcrafted foods, each with a story rooted in Indian tradition.
+          </p>
+          <div class="products-grid">
+            <article class="product-card">
+              <div class="product-visual jaggery">
+                <img
+                  src="assets/organic_jaggery_hero_1785581871908-B_1vChWj.jpg"
+                  alt="Organic jaggery powder, cubes, and blocks"
+                >
+              </div>
+              <div class="product-body">
+                <p class="product-category">Organic Jaggery</p>
+                <h3 class="product-title">Kolhapuri Shakkar Gud</h3>
+                <p class="product-items">Powder &bull; Cubes &bull; Blocks</p>
+                <p class="product-desc">
+                  Chemical-free, traditional Kolhapuri gud made from pure sugarcane juice.
+                  Unrefined sweetness that replaces processed sugar naturally.
+                </p>
+                <a href="/shop.html" class="product-link">Shop Jaggery &rarr;</a>
+              </div>
+            </article>
+
+            <article class="product-card">
+              <div class="product-visual ghee" aria-hidden="true">🧈</div>
+              <div class="product-body">
+                <p class="product-category">A2 Desi Cow Ghee</p>
+                <h3 class="product-title">Traditional Bilona Ghee</h3>
+                <p class="product-items">A2 Gir Cow Ghee</p>
+                <p class="product-desc">
+                  Hand-churned from curd using a wooden madhani. Slow-cooked A2 Desi Gir
+                  cow ghee — rich, aromatic, and pure.
+                </p>
+                <a href="/shop.html" class="product-link">Shop Ghee &rarr;</a>
+              </div>
+            </article>
+
+            <article class="product-card">
+              <div class="product-visual honey" aria-hidden="true">🍯</div>
+              <div class="product-body">
+                <p class="product-category">Pure Honey &amp; Ghee</p>
+                <h3 class="product-title">Wild Forest Honey</h3>
+                <p class="product-items">Raw Unprocessed Honey &bull; A2 Desi Ghee</p>
+                <p class="product-desc">
+                  100% raw, unheated, and unfiltered honey extracted by local tribal beekeepers.
+                  Single-origin honey collected from wild flora — retains natural pollen and enzymes.
+                </p>
+                <a href="/shop.html" class="product-link">Shop Honey &rarr;</a>
+              </div>
+            </article>
+
+            <article class="product-card">
+              <div class="product-visual makhana" aria-hidden="true">🌾</div>
+              <div class="product-body">
+                <p class="product-category">Foxnuts (Makhana)</p>
+                <h3 class="product-title">Roasted Makhana</h3>
+                <p class="product-items">Himalayan Salt &amp; Pepper &bull; Caramel Jaggery Glazed</p>
+                <p class="product-desc">
+                  Slow-roasted foxnuts in pure A2 cow ghee. Classic Himalayan salt and pepper,
+                  or golden caramel glazed with organic jaggery and cinnamon.
+                </p>
+                <a href="/shop.html" class="product-link">Shop Makhana &rarr;</a>
+              </div>
+            </article>
+
+            <article class="product-card">
+              <div class="product-visual spices" aria-hidden="true">🌿</div>
+              <div class="product-body">
+                <p class="product-category">Handmade Spices</p>
+                <h3 class="product-title">Heritage Spices &amp; Pickles</h3>
+                <p class="product-items">Lakadong Turmeric &bull; Artisanal Pickles</p>
+                <p class="product-desc">
+                  Hand-pounded organic Lakadong turmeric powder with high curcumin content.
+                  Grandma's heritage pickles in mustard oil and spices.
+                </p>
+                <a href="/shop.html" class="product-link">Shop Spices &rarr;</a>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" class="section section-alt contact-section">
+        <div class="container">
+          <span class="section-label">Get in Touch</span>
+          <h2 class="section-title">Order Fresh from Celestial Goods</h2>
+          <p class="section-lead" style="margin-inline: auto;">
+            Place your order via WhatsApp or email. We deliver pure, farm-fresh
+            delicacies straight to your doorstep with cash on delivery available.
+          </p>
+          <div class="contact-actions">
+            <a
+              href="https://wa.me/91XXXXXXXXXX?text=Hi%2C%20I%20would%20like%20to%20order%20from%20Celestial%20Goods"
+              class="btn btn-whatsapp"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Order on WhatsApp
+            </a>
+            <a href="mailto:Sumit@celestialgood.com" class="btn btn-outline">
+              Sumit@celestialgood.com
+            </a>
+            <a href="/shop.html" class="btn btn-gold">Browse Online Shop</a>
+          </div>
+          <p class="contact-note">
+            WhatsApp number coming soon — update the link when ready.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div class="footer-logo logo">
+          <span class="logo-main">Celestial</span>
+          <span class="logo-sub">Goods</span>
+        </div>
+        <p class="footer-tagline">Connecting Farmers to the World</p>
+        <div class="footer-contact">
+          <a href="mailto:Sumit@celestialgood.com">Sumit@celestialgood.com</a>
+          <a href="/shop.html">Online Shop</a>
+        </div>
+        <p class="footer-copy">&copy; 2026 Celestial Goods. All rights reserved.</p>
+      </div>
+    </footer>
   </body>
 </html>
