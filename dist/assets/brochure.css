@@ -457,6 +457,8 @@ ul { list-style: none; }
   width: auto;
   object-fit: contain;
   transition: height var(--transition);
+  display: block;
+  max-height: 80px;
 }
 
 .site-header.scrolled .logo-img { height: 44px; }
