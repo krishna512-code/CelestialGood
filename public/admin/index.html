@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Celestial Good — Admin Panel</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: #F5F0E8; color: #1C1C1A; }
+    .admin-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .admin-header { background: #1B4332; color: #F5F0E8; padding: 24px; border-radius: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+    .admin-header h1 { font-family: 'Cormorant Garamond', serif; font-size: 28px; }
+    .admin-header button { background: rgba(255,255,255,0.2); color: #F5F0E8; border: 1px solid rgba(255,255,255,0.3); padding: 8px 20px; border-radius: 8px; cursor: pointer; }
+    .admin-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .admin-tab { padding: 10px 20px; background: #fff; border: 2px solid #1B4332; border-radius: 10px; cursor: pointer; font-weight: 600; color: #1B4332; transition: all 0.2s; }
+    .admin-tab.active { background: #1B4332; color: #F5F0E8; }
+    .admin-section { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(27,67,50,0.08); }
+    .admin-section h2 { font-family: 'Cormorant Garamond', serif; font-size: 22px; margin-bottom: 16px; color: #1B4332; }
+    .admin-form { display: grid; gap: 16px; }
+    .admin-form label { font-weight: 600; color: #1B4332; font-size: 14px; }
+    .admin-form input, .admin-form textarea, .admin-form select { padding: 10px 14px; border: 2px solid #D4A84B; border-radius: 8px; font-size: 15px; font-family: inherit; transition: border-color 0.2s; }
+    .admin-form input:focus, .admin-form textarea:focus, .admin-form select:focus { outline: none; border-color: #1B4332; }
+    .admin-form textarea { min-height: 100px; resize: vertical; }
+    .admin-btn { padding: 10px 24px; background: #C4943D; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 15px; transition: background 0.2s; }
+    .admin-btn:hover { background: #A67C2E; }
+    .admin-btn-danger { background: #6B4F2A; }
+    .admin-btn-danger:hover { background: #4A3520; }
+    .admin-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .admin-table th, .admin-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #EDE7DA; }
+    .admin-table th { background: #1B4332; color: #F5F0E8; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .admin-table tr:hover { background: #FAF9F5; }
+    .login-container { max-width: 400px; margin: 100px auto; background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(27,67,50,0.08); }
+    .login-container h1 { font-family: 'Cormorant Garamond', serif; font-size: 28px; text-align: center; margin-bottom: 24px; color: #1B4332; }
+    .login-container .form-group { margin-bottom: 20px; }
+    .login-container input { width: 100%; padding: 12px 16px; border: 2px solid #D4A84B; border-radius: 8px; font-size: 16px; }
+    .login-container button { width: 100%; padding: 14px; background: #1B4332; color: #F5F0E8; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+    .login-container button:hover { background: #2E5D34; }
+    .hidden { display: none; }
+    .toast { position: fixed; top: 20px; right: 20px; background: #1B4332; color: #F5F0E8; padding: 16px 24px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 1000; }
+    .image-preview { max-width: 100px; max-height: 100px; border-radius: 8px; border: 2px solid #EDE7DA; }
+    .flex-row { display: flex; gap: 16px; align-items: center; }
+    .variant-row { display: flex; gap: 8px; align-items: center; }
+    .variant-row input { width: 120px; padding: 8px; border: 2px solid #D4A84B; border-radius: 6px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div id="loginScreen" class="login-container">
+    <h1>🛡️ Admin Login</h1>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="admin" value="admin">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="admin">
+    </div>
+    <button onclick="doLogin()">Sign In</button>
+    <p id="loginError" style="color: #c0392b; margin-top: 12px; text-align: center;" class="hidden">Invalid credentials</p>
+  </div>
+
+  <div id="adminPanel" class="admin-container hidden">
+    <div class="admin-header">
+      <h1>🌿 Celestial Good — Admin Panel</h1>
+      <button onclick="doLogout()">Logout</button>
+    </div>
+
+    <div class="admin-tabs">
+      <div class="admin-tab active" onclick="switchTab('settings', this)">⚙️ Settings</div>
+      <div class="admin-tab" onclick="switchTab('categories', this)">📂 Categories</div>
+      <div class="admin-tab" onclick="switchTab('products', this)">📦 Products</div>
+      <div class="admin-tab" onclick="switchTab('banners', this)">🎠 Banners</div>
+      <div class="admin-tab" onclick="switchTab('testimonials', this)">💬 Testimonials</div>
+      <div class="admin-tab" onclick="switchTab('faq', this)">❓ FAQ</div>
+    </div>
+
+    <div id="tab-settings" class="admin-section">
+      <h2>Site Settings</h2>
+      <div class="admin-form">
+        <label>Hero Title</label><input type="text" id="set-hero_title" placeholder="Hero title">
+        <label>Hero Subtitle</label><input type="text" id="set-hero_subtitle" placeholder="Hero subtitle">
+        <label>Hero Description</label><textarea id="set-hero_description" placeholder="Hero description"></textarea>
+        <label>Announcement Bar</label><input type="text" id="set-announcement_text" placeholder="Announcement text">
+        <label>WhatsApp Number</label><input type="text" id="set-whatsapp_number" placeholder="WhatsApp number">
+        <label>Email</label><input type="text" id="set-email" placeholder="Email">
+        <label>Footer Description</label><textarea id="set-footer_description" placeholder="Footer description"></textarea>
+        <label>Copyright Text</label><input type="text" id="set-copyright_text" placeholder="Copyright">
+        <button class="admin-btn" onclick="saveSettings()">Save Settings</button>
+      </div>
+    </div>
+
+    <div id="tab-categories" class="admin-section hidden">
+      <h2>Manage Categories</h2>
+      <div class="admin-form" style="margin-bottom: 20px;">
+        <label>Category Name</label><input type="text" id="cat-name" placeholder="Name">
+        <label>Slug</label><input type="text" id="cat-slug" placeholder="e.g., jaggery">
+        <label>Icon</label><input type="text" id="cat-icon" placeholder="e.g., 🏺">
+        <label>Description</label><input type="text" id="cat-desc" placeholder="Description">
+        <button class="admin-btn" onclick="addCategory()">Add Category</button>
+      </div>
+      <table class="admin-table"><thead><tr><th>Name</th><th>Icon</th><th>Actions</th></tr></thead><tbody id="categoriesTable"></tbody></table>
+    </div>
+
+    <div id="tab-products" class="admin-section hidden">
+      <h2>Manage Products</h2>
+      <div class="admin-form" style="margin-bottom: 20px;">
+        <label>Product Name</label><input type="text" id="prod-name" placeholder="Name">
+        <label>Slug</label><input type="text" id="prod-slug" placeholder="e.g., organic-jaggery">
+        <label>Description</label><textarea id="prod-description" placeholder="Full description"></textarea>
+        <label>Short Description</label><input type="text" id="prod-short_desc" placeholder="Short description">
+        <div class="flex-row"><div style="flex:1"><label>Price</label><input type="number" id="prod-price" placeholder="Price"></div><div style="flex:1"><label>MRP</label><input type="number" id="prod-mrp" placeholder="MRP"></div></div>
+        <div class="flex-row"><div style="flex:1"><label>Category</label><select id="prod-category"><option value="">Select...</option></select></div><div style="flex:1"><label>Badge</label><input type="text" id="prod-badge" placeholder="e.g., 🔥 Bestseller"></div></div>
+        <label>Variants (JSON)</label><textarea id="prod-variants" placeholder='[{"weight":"500g","price":180,"mrp":220}]' style="height:60px"></textarea>
+        <div class="flex-row"><label>Featured</label><input type="checkbox" id="prod-featured"></div>
+        <label>Image</label><input type="file" id="prod-image" accept="image/*">
+        <button class="admin-btn" onclick="addProduct()">Add Product</button>
+      </div>
+      <table class="admin-table"><thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Actions</th></tr></thead><tbody id="productsTable"></tbody></table>
+    </div>
+
+    <div id="tab-banners" class="admin-section hidden">
+      <h2>Manage Banners</h2>
+      <div class="admin-form" style="margin-bottom: 20px;">
+        <label>Heading</label><input type="text" id="ban-heading" placeholder="Heading">
+        <label>Badge</label><input type="text" id="ban-badge" placeholder="e.g., 🔥 Bestseller">
+        <label>Subtitle</label><input type="text" id="ban-subtitle" placeholder="Subtitle">
+        <label>Link</label><input type="text" id="ban-link" placeholder="Link URL">
+        <label>Image</label><input type="file" id="ban-image" accept="image/*">
+        <button class="admin-btn" onclick="addBanner()">Add Banner</button>
+      </div>
+      <table class="admin-table"><thead><tr><th>Heading</th><th>Badge</th><th>Actions</th></tr></thead><tbody id="bannersTable"></tbody></table>
+    </div>
+
+    <div id="tab-testimonials" class="admin-section hidden">
+      <h2>Manage Testimonials</h2>
+      <div class="admin-form" style="margin-bottom: 20px;">
+        <label>Name</label><input type="text" id="test-name" placeholder="Name">
+        <label>Location</label><input type="text" id="test-location" placeholder="City, location">
+        <label>Text</label><textarea id="test-text" placeholder="Testimonial text"></textarea>
+        <button class="admin-btn" onclick="addTestimonial()">Add Testimonial</button>
+      </div>
+      <table class="admin-table"><thead><tr><th>Name</th><th>Location</th><th>Actions</th></tr></thead><tbody id="testimonialsTable"></tbody></table>
+    </div>
+
+    <div id="tab-faq" class="admin-section hidden">
+      <h2>Manage FAQ</h2>
+      <div class="admin-form" style="margin-bottom: 20px;">
+        <label>Question</label><input type="text" id="faq-question" placeholder="Question">
+        <label>Answer</label><textarea id="faq-answer" placeholder="Answer"></textarea>
+        <button class="admin-btn" onclick="addFAQ()">Add FAQ</button>
+      </div>
+      <table class="admin-table"><thead><tr><th>Question</th><th>Actions</th></tr></thead><tbody id="faqTable"></tbody></table>
+    </div>
+  </div>
+
+  <script>
+    let allData = {};
+    
+    // Check session
+    fetch('/api/admin/me').then(r => r.json()).then(d => {
+      if (d.loggedIn) showAdmin(); else showLogin();
+    }).catch(() => showLogin());
+    
+    function showLogin() { document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('adminPanel').classList.add('hidden'); }
+    function showAdmin() { document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('adminPanel').classList.remove('hidden'); loadAllData(); }
+    
+    async function doLogin() {
+      const user = document.getElementById('loginUser').value;
+      const pass = document.getElementById('loginPass').value;
+      const r = await fetch('/api/admin/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username: user, password: pass}) });
+      if (r.ok) { showAdmin(); } else { document.getElementById('loginError').classList.remove('hidden'); }
+    }
+    
+    async function doLogout() { await fetch('/api/admin/logout', {method:'POST'}); showLogin(); }
+    
+    async function switchTab(tab, el) {
+      document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
+      el.classList.add('active');
+      document.getElementById('tab-' + tab).classList.remove('hidden');
+    }
+    
+    async function loadAllData() {
+      const res = await fetch('/api/settings');
+      const settings = await res.json();
+      document.getElementById('set-hero_title').value = settings.hero_title || '';
+      document.getElementById('set-hero_subtitle').value = settings.hero_subtitle || '';
+      document.getElementById('set-hero_description').value = settings.hero_description || '';
+      document.getElementById('set-announcement_text').value = settings.announcement_text || '';
+      document.getElementById('set-whatsapp_number').value = settings.whatsapp_number || '';
+      document.getElementById('set-email').value = settings.email || '';
+      document.getElementById('set-footer_description').value = settings.footer_description || '';
+      document.getElementById('set-copyright_text').value = settings.copyright_text || '';
+      
+      const [cats, prods, bans, tests, faqs] = await Promise.all([
+        fetch('/api/categories').then(r => r.json()),
+        fetch('/api/products').then(r => r.json()),
+        fetch('/api/banners').then(r => r.json()),
+        fetch('/api/testimonials').then(r => r.json()),
+        fetch('/api/faq').then(r => r.json())
+      ]);
+      
+      renderCategories(cats); renderProducts(prods); renderBanners(bans); renderTestimonials(tests); renderFAQ(faqs);
+      
+      // Populate category select
+      const sel = document.getElementById('prod-category');
+      sel.innerHTML = '<option value="">Select...</option>' + cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+    
+    function renderCategories(cats) { document.getElementById('categoriesTable').innerHTML = cats.map(c => `<tr><td>${c.name}</td><td>${c.icon}</td><td><button class="admin-btn admin-btn-danger" onclick="deleteCategory(${c.id})">Delete</button></td></tr>`).join(''); }
+    function renderProducts(prods) { document.getElementById('productsTable').innerHTML = prods.map(p => `<tr><td>${p.name}</td><td>${p.category_name || ''}</td><td>₹${p.price}</td><td><button class="admin-btn admin-btn-danger" onclick="deleteProduct(${p.id})">Delete</button></td></tr>`).join(''); }
+    function renderBanners(bans) { document.getElementById('bannersTable').innerHTML = bans.map(b => `<tr><td>${b.heading}</td><td>${b.badge}</td><td><button class="admin-btn admin-btn-danger" onclick="deleteBanner(${b.id})">Delete</button></td></tr>`).join(''); }
+    function renderTestimonials(tests) { document.getElementById('testimonialsTable').innerHTML = tests.map(t => `<tr><td>${t.name}</td><td>${t.location}</td><td><button class="admin-btn admin-btn-danger" onclick="deleteTestimonial(${t.id})">Delete</button></td></tr>`).join(''); }
+    function renderFAQ(faqs) { document.getElementById('faqTable').innerHTML = faqs.map(f => `<tr><td>${f.question}</td><td><button class="admin-btn admin-btn-danger" onclick="deleteFAQ(${f.id})">Delete</button></td></tr>`).join(''); }
+    
+    async function saveSettings() {
+      const data = {};
+      ['hero_title','hero_subtitle','hero_description','announcement_text','whatsapp_number','email','footer_description','copyright_text'].forEach(k => data[k] = document.getElementById('set-'+k).value);
+      await fetch('/api/settings', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+      showToast('Settings saved!');
+    }
+    
+    async function addCategory() {
+      const name = document.getElementById('cat-name').value;
+      const slug = document.getElementById('cat-slug').value;
+      const icon = document.getElementById('cat-icon').value;
+      const desc = document.getElementById('cat-desc').value;
+      await fetch('/api/categories', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, slug, icon, description: desc}) });
+      loadAllData(); showToast('Category added!');
+    }
+    
+    async function addProduct() {
+      const formData = new FormData();
+      ['name','slug','description','short_desc','price','mrp','badge','featured','variants'].forEach(k => { const v = document.getElementById('prod-'+k).value; if (k === 'featured') formData.append(k, document.getElementById('prod-featured').checked ? '1' : '0'); else formData.append(k, v); });
+      formData.append('category_id', document.getElementById('prod-category').value);
+      const img = document.getElementById('prod-image').files[0];
+      if (img) formData.append('image', img);
+      await fetch('/api/products', { method: 'POST', body: formData });
+      loadAllData(); showToast('Product added!');
+    }
+    
+    async function addBanner() {
+      const formData = new FormData();
+      ['heading','badge','subtitle','link'].forEach(k => formData.append(k, document.getElementById('ban-'+k).value));
+      const img = document.getElementById('ban-image').files[0];
+      if (img) formData.append('image', img);
+      formData.append('sort_order', '0');
+      await fetch('/api/banners', { method: 'POST', body: formData });
+      loadAllData(); showToast('Banner added!');
+    }
+    
+    async function addTestimonial() {
+      const data = { name: document.getElementById('test-name').value, location: document.getElementById('test-location').value, text: document.getElementById('test-text').value };
+      await fetch('/api/testimonials', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+      loadAllData(); showToast('Testimonial added!');
+    }
+    
+    async function addFAQ() {
+      const data = { question: document.getElementById('faq-question').value, answer: document.getElementById('faq-answer').value };
+      await fetch('/api/faq', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+      loadAllData(); showToast('FAQ added!');
+    }
+    
+    async function deleteCategory(id) { await fetch(`/api/categories/${id}`, {method:'DELETE'}); loadAllData(); }
+    async function deleteProduct(id) { await fetch(`/api/products/${id}`, {method:'DELETE'}); loadAllData(); }
+    async function deleteBanner(id) { await fetch(`/api/banners/${id}`, {method:'DELETE'}); loadAllData(); }
+    async function deleteTestimonial(id) { await fetch(`/api/testimonials/${id}`, {method:'DELETE'}); loadAllData(); }
+    async function deleteFAQ(id) { await fetch(`/api/faq/${id}`, {method:'DELETE'}); loadAllData(); }
+    
+    function showToast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
+  </script>
+</body>
+</html>

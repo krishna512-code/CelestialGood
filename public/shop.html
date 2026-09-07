@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shop — Celestial Good</title>
+  <meta name="description" content="Shop premium organic jaggery, ghee, honey, makhana, and handcrafted spices from Celestial Good. COD available, pan-India delivery.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/brochure.css">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+</head>
+<body>
+  <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+  <div class="announce-bar" id="announce-bar"><span class="gold">Free delivery</span> on orders above ₹999 &nbsp;·&nbsp; 📦 COD available across India</div>
+  <header class="site-header" id="site-header">
+    <div class="container header-inner">
+      <a href="/" class="logo" aria-label="Celestial Good home"><img src="assets/celestial-good-logo.png" alt="Celestial Good Logo" class="logo-img"></a>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="/#story">Our Story</a><a href="/#products">Products</a><a href="/shop.html" class="is-current">Shop</a><a href="/#faq">FAQ</a><a href="/#contact">Contact</a>
+      </nav>
+      <div class="header-right">
+        <a href="/#contact" class="btn btn-ghost btn-sm">Contact</a>
+        <button class="cart-btn" id="cart-btn" aria-label="Open cart"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="21" r="1.6"/><circle cx="19" cy="21" r="1.6"/><path d="M2.5 3h2l2.4 12.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6l1.4-7.4H6"/></svg><span class="cart-label">Cart</span><span class="cart-count" id="cart-count" hidden>0</span></button>
+        <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-nav"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </header>
+  <div class="nav-overlay" id="nav-overlay"></div>
+  <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
+    <div class="mobile-nav-head"><img src="assets/celestial-good-logo.png" alt="Celestial Good" class="mobile-nav-logo"><button class="mobile-nav-close" id="mobile-nav-close" aria-label="Close menu">&times;</button></div>
+    <a href="/#story" class="mobile-nav-link">Our Story</a><a href="/#products" class="mobile-nav-link">Products</a><a href="/shop.html" class="mobile-nav-link">Online Shop</a><a href="/#faq" class="mobile-nav-link">FAQ</a><a href="/#contact" class="mobile-nav-link">Contact</a>
+    <button class="btn btn-gold btn-block mobile-nav-cta" id="mobile-cart-btn">View Cart</button>
+    <div class="mobile-nav-foot"><p class="mobile-nav-motto">• Connecting Farmers to the World •</p><a class="mobile-nav-phone" href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer">WhatsApp: +91 87892 67181</a></div>
+  </nav>
+  <div class="cart-overlay" id="cart-overlay"></div>
+  <aside class="cart-drawer" id="cart-drawer" aria-label="Shopping cart">
+    <div class="cart-head"><h2>Your Cart <span class="cart-count" id="drawer-count" hidden>0</span></h2><button class="mobile-nav-close" id="cart-close" aria-label="Close cart">&times;</button></div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-foot">
+      <div class="cart-total-row"><span class="cart-total-label">Subtotal</span><span class="cart-total-value" id="cart-total">₹0</span></div>
+      <p class="cart-note">🚚 Free delivery on orders above ₹999 · COD available</p>
+      <button class="btn btn-whatsapp btn-block" id="checkout-btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2Zm5.8 14.1c-.25.7-1.45 1.35-2 1.4-.55.05-1.05.2-3.55-.95s-4-3.85-4.15-4.05c-.15-.2-1-1.4-1-2.65s.65-1.85.9-2.1c.25-.25.5-.3.7-.3h.5c.15 0 .35-.05.55.4.2.5.7 1.7.75 1.85.05.1.1.25 0 .4-.1.2-.2.3-.35.5s-.3.35-.45.5c-.15.15-.3.3-.15.6.15.3.7 1.15 1.5 1.85.95.85 1.75 1.15 2.05 1.3.3.15.5.1.65-.05.2-.2.7-.8.9-1.05.2-.3.4-.25.65-.15.25.1 1.6.75 1.85.9.25.1.45.15.5.25.05.15.05.7-.2 1.4Z"/></svg>Checkout via WhatsApp</button>
+      <button class="btn btn-outline btn-block" id="clear-cart-btn">Clear Cart</button>
+    </div>
+  </aside>
+  <main>
+    <section class="section" style="padding-bottom:32px;">
+      <div class="container">
+        <div class="section-head center reveal in">
+          <span class="section-label">Shop Celestial Good</span><h1 class="section-title">Artisanal Delicacies</h1>
+          <p class="section-lead">Browse organic pantry staples made in small batches, choose your pack size, and order by cart or WhatsApp with COD support.</p>
+        </div>
+        <div class="trust-strip reveal in">
+          <span class="trust-badge"><span class="ico">🌿</span> 100% Natural</span><span class="trust-badge"><span class="ico">🌾</span> Locally Sourced</span><span class="trust-badge"><span class="ico">📦</span> COD Available</span><span class="trust-badge"><span class="ico">🚚</span> Pan-India Delivery</span>
+        </div>
+        <div class="shop-toolbar">
+          <div class="search-box"><svg class="search-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="search-input" placeholder="" aria-label="Search products"><button class="search-clear" id="search-clear" aria-label="Clear search">&times;</button></div>
+          <div class="filter-row" id="shop-filters" role="group" aria-label="Filter by category"></div>
+          <select class="sort-select" id="sort-select" aria-label="Sort products"><option value="featured">Sort: Featured</option><option value="price-asc">Price: Low → High</option><option value="price-desc">Price: High → Low</option><option value="name">Name: A → Z</option></select>
+        </div>
+        <p class="results-meta" id="results-meta">Loading products…</p>
+      </div>
+    </section>
+    <section class="section" style="padding-top:0;">
+      <div class="container"><div class="product-grid" id="shop-grid"></div>
+        <div class="empty-state" id="empty-state"><div class="emoji" aria-hidden="true">🔍</div><h3>No products found</h3><p>Try a different search term or category filter.</p><button class="btn btn-outline" id="reset-filters">Reset Filters</button></div>
+      </div>
+    </section>
+    <section class="cta-band"><div class="container"><span class="section-label">Need Help?</span><h2 class="section-title">Order the Easy Way — on WhatsApp</h2><p class="section-lead">Need a recommendation, bulk quantity, or a custom gift pack? Message us and we will help before checkout.</p><div class="cta-actions"><a href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-lg">Chat on WhatsApp</a><a href="mailto:Sumit@celestialgood.com" class="btn btn-outline-light btn-lg">Sumit@celestialgood.com</a></div></div></section>
+  </main>
+  <footer class="site-footer"><div class="container"><div class="footer-grid"><div class="footer-brand"><img src="assets/celestial-good-logo.png" alt="Celestial Good" class="footer-logo-img"><p id="footer-desc">Pure, organic, and traditionally made delicacies — sourced directly from Indian farmers and delivered to your doorstep.</p><div class="footer-social"><a href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2Zm5.8 14.1c-.25.7-1.45 1.35-2 1.4-.55.05-1.05.2-3.55-.95s-4-3.85-4.15-4.05c-.15-.2-1-1.4-1-2.65s.65-1.85.9-2.1c.25-.25.5-.3.7-.3h.5c.15 0 .35-.05.55.4.2.5.7 1.7.75 1.85.05.1.1.25 0 .4-.1.2-.2.3-.35.5s-.3.35-.45.5c-.15.15-.3.3-.15.6.15.3.7 1.15 1.5 1.85.95.85 1.75 1.15 2.05 1.3.3.15.5.1.65-.05.2-.2.7-.8.9-1.05.2-.3.4-.25.65-.15.25.1 1.6.75 1.85.9.25.1.45.15.5.25.05.15.05.7-.2 1.4Z"/></svg></a><a href="mailto:Sumit@celestialgood.com" aria-label="Email"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="m2 7 10 6L22 7"/></svg></a><a href="/shop.html" aria-label="Online shop"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="21" r="1.6"/><circle cx="19" cy="21" r="1.6"/><path d="M2.5 3h2l2.4 12.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6l1.4-7.4H6"/></svg></a></div></div><div class="footer-col"><h4>Explore</h4><ul><li><a href="/">Home</a></li><li><a href="/#story">Our Story</a></li><li><a href="/#products">Products</a></li><li><a href="/shop.html">Online Shop</a></li></ul></div><div class="footer-col"><h4>Support</h4><ul><li><a href="/#faq">FAQ</a></li><li><a href="/#contact">Contact Us</a></li><li><a href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer">WhatsApp Orders</a></li></ul></div><div class="footer-col"><h4>Contact</h4><ul><li><a href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer">+91 87892 67181</a></li><li><a href="mailto:Sumit@celestialgood.com">Sumit@celestialgood.com</a></li><li><a href="/shop.html">COD across India</a></li></ul></div></div><div class="footer-bottom"><span id="copyright-text">&copy; 2026 Celestial Good. All rights reserved.</span></div></div></footer>
+  <div class="fab-stack"><button class="fab fab-top" id="back-to-top" aria-label="Back to top"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button><a class="fab fab-whatsapp" href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2Zm5.8 14.1c-.25.7-1.45 1.35-2 1.4-.55.05-1.05.2-3.55-.95s-4-3.85-4.15-4.05c-.15-.2-1-1.4-1-2.65s.65-1.85.9-2.1c.25-.25.5-.3.7-.3h.5c.15 0 .35-.05.55.4.2.5.7 1.7.75 1.85.05.1.1.25 0 .4-.1.2-.2.3-.35.5s-.3.35-.45.5c-.15.15-.3.3-.15.6.15.3.7 1.15 1.5 1.85.95.85 1.75 1.15 2.05 1.3.3.15.5.1.65-.05.2-.2.7-.8.9-1.05.2-.3.4-.25.65-.15.25.1 1.6.75 1.85.9.25.1.45.15.5.25.05.15.05.7-.2 1.4Z"/></svg></a></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"><span class="tick" aria-hidden="true">✓</span><span id="toast-msg">Added to cart</span></div>
+  <script>
+  (function(){
+    "use strict";
+
+    var DEFAULT_WA = "918789267181";
+    var DEFAULT_EMAIL = "Sumit@celestialgood.com";
+    var WA_NUMBER = DEFAULT_WA;
+    var CONTACT_EMAIL = DEFAULT_EMAIL;
+    var CART_KEY = "celestial-cart";
+    var fallbackImage = "assets/organic_jaggery_hero_1785581871908-B_1vChWj.jpg";
+    var allProducts = [];
+    var allCategories = [];
+    var activeFilter = "all";
+
+    function $(selector, scope) { return (scope || document).querySelector(selector); }
+    function $all(selector, scope) { return Array.prototype.slice.call((scope || document).querySelectorAll(selector)); }
+    function escapeHTML(value) {
+      return String(value == null ? "" : value).replace(/[&<>"']/g, function(char) {
+        return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char];
+      });
+    }
+    function formatINR(value) {
+      return "₹" + Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+    }
+    function compactText(value, length) {
+      var text = String(value || "").trim();
+      return text.length > length ? text.slice(0, length).trim().replace(/[.,;:!?-]+$/, "") + "..." : text;
+    }
+    function slugFromName(value) {
+      return String(value || "product").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    }
+    function normalizeVariants(product) {
+      if (Array.isArray(product.variants) && product.variants.length) return product.variants;
+      if (typeof product.variants === "string" && product.variants.trim()) {
+        try {
+          var parsed = JSON.parse(product.variants);
+          if (Array.isArray(parsed) && parsed.length) return parsed;
+        } catch (e) {}
+      }
+      return [{ weight: "Pack", price: product.price || 0, mrp: product.mrp || product.price || 0 }];
+    }
+    function savingsLabel(price, mrp) {
+      price = Number(price || 0);
+      mrp = Number(mrp || 0);
+      if (!mrp || mrp <= price) return "";
+      return '<span class="price-save">Save ' + Math.round((1 - price / mrp) * 100) + "%</span>";
+    }
+    function whatsappProductUrl(productName) {
+      return "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent("Hi, I would like to order " + productName + " from Celestial Good.");
+    }
+    function loadCart() {
+      try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch(e) { return []; }
+    }
+    function saveCart(cart) {
+      try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch(e) {}
+    }
+    function cartCount(cart) {
+      return cart.reduce(function(sum, item) { return sum + (Number(item.quantity) || 0); }, 0);
+    }
+    function cartTotal(cart) {
+      return cart.reduce(function(sum, item) { return sum + ((Number(item.price) || 0) * (Number(item.quantity) || 0)); }, 0);
+    }
+
+    var toast = $("#toast");
+    var toastMsg = $("#toast-msg");
+    var toastTimer = null;
+    var progress = $("#scroll-progress");
+    var header = $("#site-header");
+    var backToTop = $("#back-to-top");
+    var hamburger = $("#hamburger");
+    var mobileNav = $("#mobile-nav");
+    var navOverlay = $("#nav-overlay");
+    var navClose = $("#mobile-nav-close");
+    var cartDrawer = $("#cart-drawer");
+    var cartOverlay = $("#cart-overlay");
+    var cartClose = $("#cart-close");
+    var cartItemsEl = $("#cart-items");
+    var cartTotalEl = $("#cart-total");
+    var cartCountEl = $("#cart-count");
+    var drawerCountEl = $("#drawer-count");
+    var searchBox = $(".search-box");
+    var searchInput = $("#search-input");
+    var searchClear = $("#search-clear");
+    var sortSelect = $("#sort-select");
+    var filterHost = $("#shop-filters");
+    var emptyState = $("#empty-state");
+    var resultsMeta = $("#results-meta");
+    var grid = $("#shop-grid");
+
+    function showToast(message) {
+      if (!toast || !toastMsg) return;
+      toastMsg.textContent = message;
+      toast.classList.add("show");
+      if (toastTimer) window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(function() { toast.classList.remove("show"); }, 2600);
+    }
+
+    async function fetchJSON(url, fallback) {
+      try {
+        var response = await fetch(url);
+        if (!response.ok) throw new Error("Request failed");
+        return await response.json();
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    async function loadSettings() {
+      var settings = await fetchJSON("/api/settings", {});
+      WA_NUMBER = String(settings.whatsapp_number || DEFAULT_WA).replace(/[^0-9]/g, "") || DEFAULT_WA;
+      CONTACT_EMAIL = settings.email || DEFAULT_EMAIL;
+
+      if ($("#announce-bar")) $("#announce-bar").innerHTML = '<span class="gold">' + escapeHTML(settings.announcement_text || "Free delivery on orders above ₹999 · COD available across India") + "</span>";
+      if ($("#footer-desc")) $("#footer-desc").textContent = settings.footer_description || "Pure, organic, and traditionally made delicacies — sourced directly from Indian farmers and delivered to your doorstep.";
+      if ($("#copyright-text")) $("#copyright-text").textContent = settings.copyright_text || "© 2026 Celestial Good. All rights reserved.";
+      if ($(".mobile-nav-motto")) $(".mobile-nav-motto").textContent = "• " + (settings.hero_title || "Connecting Farmers to the World") + " •";
+      if ($(".mobile-nav-phone")) {
+        $(".mobile-nav-phone").href = "https://wa.me/" + WA_NUMBER;
+        $(".mobile-nav-phone").textContent = "WhatsApp: +" + WA_NUMBER;
+      }
+      $all('a[href^="mailto:"]').forEach(function(link) {
+        link.href = "mailto:" + CONTACT_EMAIL;
+        if (link.textContent.indexOf("@") !== -1) link.textContent = CONTACT_EMAIL;
+      });
+      $all('a[href*="wa.me"]').forEach(function(link) {
+        if (!link.classList.contains("product-wa")) link.href = "https://wa.me/" + WA_NUMBER;
+      });
+    }
+
+    function observeReveals(scope) {
+      var items = $all(".reveal", scope || document).filter(function(el) { return !el.classList.contains("in"); });
+      if (!items.length) return;
+      if (!("IntersectionObserver" in window)) {
+        items.forEach(function(el) { el.classList.add("in"); });
+        return;
+      }
+      var io = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in");
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+      items.forEach(function(el) { io.observe(el); });
+    }
+
+    function onScroll() {
+      var doc = document.documentElement;
+      var max = doc.scrollHeight - window.innerHeight;
+      var pct = max > 0 ? (window.scrollY / max) * 100 : 0;
+      if (progress) progress.style.width = pct + "%";
+      if (header) header.classList.toggle("scrolled", window.scrollY > 24);
+      if (backToTop) backToTop.classList.toggle("show", window.scrollY > 600);
+    }
+
+    function openMenu() {
+      if (!mobileNav || !navOverlay || !hamburger) return;
+      mobileNav.classList.add("open");
+      navOverlay.classList.add("open");
+      hamburger.classList.add("active");
+      hamburger.setAttribute("aria-expanded", "true");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeMenu() {
+      if (!mobileNav || !navOverlay || !hamburger) return;
+      mobileNav.classList.remove("open");
+      navOverlay.classList.remove("open");
+      hamburger.classList.remove("active");
+      hamburger.setAttribute("aria-expanded", "false");
+      if (!cartDrawer || !cartDrawer.classList.contains("open")) document.body.style.overflow = "";
+    }
+
+    function openCart() {
+      closeMenu();
+      renderCart();
+      cartDrawer.classList.add("open");
+      cartOverlay.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeCart() {
+      cartDrawer.classList.remove("open");
+      cartOverlay.classList.remove("open");
+      if (!mobileNav || !mobileNav.classList.contains("open")) document.body.style.overflow = "";
+    }
+
+    function renderCart() {
+      var cart = loadCart();
+      var count = cartCount(cart);
+      var total = cartTotal(cart);
+      cartCountEl.textContent = count;
+      cartCountEl.hidden = count === 0;
+      drawerCountEl.textContent = count;
+      drawerCountEl.hidden = count === 0;
+
+      if (!cart.length) {
+        cartItemsEl.innerHTML = '<div class="cart-empty"><div class="emoji" aria-hidden="true">🧺</div><h3>Your cart is empty</h3><p>Add some pure, farm-fresh goodness to get started.</p><button class="btn btn-gold" id="empty-shop-btn">Browse Products</button></div>';
+        var emptyButton = $("#empty-shop-btn");
+        if (emptyButton) emptyButton.addEventListener("click", closeCart);
+      } else {
+        cartItemsEl.innerHTML = cart.map(function(item, index) {
+          return `
+            <div class="cart-item">
+              <div class="cart-item-info">
+                <p class="cart-item-name">${escapeHTML(item.name)}</p>
+                <p class="cart-item-weight">${escapeHTML(item.weight)} · ${formatINR(item.price)} each</p>
+              </div>
+              <div class="qty-stepper">
+                <button class="qty-btn" data-action="dec" data-index="${index}" aria-label="Decrease ${escapeHTML(item.name)}">−</button>
+                <span class="qty-num">${Number(item.quantity) || 0}</span>
+                <button class="qty-btn" data-action="inc" data-index="${index}" aria-label="Increase ${escapeHTML(item.name)}">+</button>
+              </div>
+              <span class="cart-item-price">${formatINR((Number(item.price) || 0) * (Number(item.quantity) || 0))}</span>
+              <button class="cart-remove" data-action="remove" data-index="${index}" aria-label="Remove ${escapeHTML(item.name)}">&times;</button>
+            </div>
+          `;
+        }).join("");
+      }
+      cartTotalEl.textContent = formatINR(total);
+    }
+
+    async function loadProducts() {
+  grid.innerHTML = '<div class="loading-grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>';
+  emptyState.classList.remove("show");
+  resultsMeta.textContent = "Loading products…";
+      var data = await Promise.all([
+        fetchJSON("/api/products", null),
+        fetchJSON("/api/categories", null)
+      ]);
+      var products = Array.isArray(data[0]) ? data[0] : null;
+      var cats = Array.isArray(data[1]) ? data[1] : null;
+      if (products === null || cats === null) {
+        grid.innerHTML = '<div class="error-state"><div class="emoji" aria-hidden="true">⚠️</div><h3>Unable to load products</h3><p>Something went wrong fetching the catalog. Please check your connection and try again.</p><button class="btn btn-gold" id="retry-load-btn">Retry</button></div>';
+        resultsMeta.textContent = "Failed to load products";
+        var retryBtn = $("#retry-load-btn");
+        if (retryBtn) retryBtn.addEventListener("click", loadProducts);
+        return;
+      }
+      allProducts = products;
+      allCategories = cats;
+      renderFilters();
+      applyFilters();
+    }
+
+    function renderFilters() {
+      var filters = [{ slug: "all", icon: "", name: "All Products" }].concat(allCategories);
+      filterHost.innerHTML = filters.map(function(cat) {
+        var label = cat.slug === "all" ? cat.name : (cat.icon ? cat.icon + " " : "") + cat.name;
+        return '<button type="button" class="chip ' + (cat.slug === activeFilter ? "active" : "") + '" data-filter="' + escapeHTML(cat.slug) + '">' + escapeHTML(label) + "</button>";
+      }).join("");
+    }
+
+    function renderProductCard(product) {
+      var variants = normalizeVariants(product).map(function(variant) {
+        return {
+          weight: variant.weight || "Pack",
+          price: Number(variant.price || product.price || 0),
+          mrp: Number(variant.mrp || product.mrp || variant.price || product.price || 0)
+        };
+      });
+      var first = variants[0];
+      var fullDescription = product.description || product.short_desc || "";
+      var shortDescription = product.short_desc || compactText(fullDescription, 145);
+      var needsToggle = fullDescription && fullDescription.length > shortDescription.length + 12;
+      var imageMarkup = product.image_url
+        ? '<div class="product-visual"><img src="' + escapeHTML(product.image_url) + '" alt="' + escapeHTML(product.name) + '" loading="lazy"></div>'
+        : '<div class="product-visual art-bg"><span class="art-emoji">' + escapeHTML((product.category_name || "").includes("Makhana") ? "🥜" : "🏺") + '</span></div>';
+      var productId = String(product.id);
+      var slug = product.slug || slugFromName(product.name);
+
+      return `
+        <article class="product-card reveal" data-product-id="${escapeHTML(productId)}" data-category="${escapeHTML(product.category_slug || "")}" data-name="${escapeHTML(product.name)}" id="shop-${escapeHTML(slug)}">
+          ${imageMarkup}
+          ${product.badge ? `<span class="product-flag">${escapeHTML(product.badge)}</span>` : ""}
+          <div class="product-body">
+            <p class="product-category">${escapeHTML(product.category_name || "Celestial Good")}</p>
+            <h3 class="product-title">${escapeHTML(product.name)}</h3>
+            <div class="product-desc-wrap">
+              <p class="product-desc" data-short="${escapeHTML(shortDescription)}" data-full="${escapeHTML(fullDescription)}">${escapeHTML(shortDescription)}</p>
+              ${needsToggle ? '<button type="button" class="read-more-btn" aria-expanded="false">Read more <span class="read-more-icon" aria-hidden="true">→</span></button>' : ""}
+            </div>
+            <div class="price-row">
+              <span class="price-now">${formatINR(first.price)}</span>
+              ${first.mrp > first.price ? `<span class="price-mrp">${formatINR(first.mrp)}</span>` : ""}
+              ${savingsLabel(first.price, first.mrp)}
+            </div>
+            <div class="variant-select" role="radiogroup" aria-label="Choose pack size for ${escapeHTML(product.name)}">
+              ${variants.map(function(variant, index) {
+                return '<button type="button" class="chip ' + (index === 0 ? "is-selected" : "") + '" data-weight="' + escapeHTML(variant.weight) + '" data-price="' + variant.price + '" data-mrp="' + variant.mrp + '" aria-pressed="' + (index === 0 ? "true" : "false") + '">' + escapeHTML(variant.weight) + "</button>";
+              }).join("")}
+            </div>
+            <div class="product-actions">
+              <button type="button" class="btn btn-primary btn-add"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add to Cart</button>
+              <a class="btn-icon product-wa" href="${whatsappProductUrl(product.name)}" target="_blank" rel="noopener noreferrer" aria-label="Order ${escapeHTML(product.name)} on WhatsApp" title="Order on WhatsApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2Zm5.8 14.1c-.25.7-1.45 1.35-2 1.4-.55.05-1.05.2-3.55-.95s-4-3.85-4.15-4.05c-.15-.2-1-1.4-1-2.65s.65-1.85.9-2.1c.25-.25.5-.3.7-.3h.5c.15 0 .35-.05.55.4.2.5.7 1.7.75 1.85.05.1.1.25 0 .4-.1.2-.2.3-.35.5s-.3.35-.45.5c-.15.15-.3.3-.15.6.15.3.7 1.15 1.5 1.85.95.85 1.75 1.15 2.05 1.3.3.15.5.1.65-.05.2-.2.7-.8.9-1.05.2-.3.4-.25.65-.15.25.1 1.6.75 1.85.9.25.1.45.15.5.25.05.15.05.7-.2 1.4Z"/></svg></a>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function applyFilters() {
+      var query = searchInput.value.trim().toLowerCase();
+      var filtered = allProducts.filter(function(product) {
+        var text = [product.name, product.short_desc, product.description, product.category_name].join(" ").toLowerCase();
+        var matchesQuery = !query || text.indexOf(query) !== -1;
+        var matchesCategory = activeFilter === "all" || product.category_slug === activeFilter || String(product.category_id) === activeFilter;
+        return matchesQuery && matchesCategory;
+      }).slice();
+
+      if (sortSelect.value === "price-asc") filtered.sort(function(a, b) { return Number(a.price || 0) - Number(b.price || 0); });
+      else if (sortSelect.value === "price-desc") filtered.sort(function(a, b) { return Number(b.price || 0) - Number(a.price || 0); });
+      else if (sortSelect.value === "name") filtered.sort(function(a, b) { return String(a.name).localeCompare(String(b.name)); });
+
+      grid.innerHTML = filtered.map(renderProductCard).join("");
+      emptyState.classList.toggle("show", filtered.length === 0);
+      resultsMeta.textContent = filtered.length
+        ? "Showing " + filtered.length + " of " + allProducts.length + " products"
+        : "No matching products right now";
+      observeReveals(grid);
+    }
+
+    function updateVariantPrice(card, chip) {
+      var price = Number(chip.dataset.price || 0);
+      var mrp = Number(chip.dataset.mrp || 0);
+      $(".price-now", card).textContent = formatINR(price);
+      var mrpEl = $(".price-mrp", card);
+      var saveEl = $(".price-save", card);
+      if (mrpEl) mrpEl.textContent = mrp > price ? formatINR(mrp) : "";
+      if (saveEl) saveEl.textContent = mrp > price ? "Save " + Math.round((1 - price / mrp) * 100) + "%" : "";
+    }
+
+    function addCardToCart(card) {
+      var selected = $(".variant-select .chip.is-selected", card);
+      if (!selected) return;
+      var name = card.dataset.name;
+      var weight = selected.dataset.weight || "Pack";
+      var price = Number(selected.dataset.price || 0);
+      var productId = card.dataset.productId;
+      var cart = loadCart();
+      var existing = cart.find(function(item) {
+        return String(item.productId) === String(productId) && item.weight === weight;
+      });
+      if (existing) existing.quantity = (Number(existing.quantity) || 0) + 1;
+      else cart.push({ productId: productId, name: name, weight: weight, price: price, quantity: 1 });
+      saveCart(cart);
+      renderCart();
+      cartCountEl.classList.remove("bump");
+      void cartCountEl.offsetWidth;
+      cartCountEl.classList.add("bump");
+      showToast(name.split("(")[0].trim() + " (" + weight + ") added");
+    }
+
+    function initEvents() {
+      window.addEventListener("scroll", onScroll, { passive: true });
+      if (backToTop) backToTop.addEventListener("click", function() { window.scrollTo({ top: 0, behavior: "smooth" }); });
+
+      if (hamburger) hamburger.addEventListener("click", function() { mobileNav.classList.contains("open") ? closeMenu() : openMenu(); });
+      if (navOverlay) navOverlay.addEventListener("click", closeMenu);
+      if (navClose) navClose.addEventListener("click", closeMenu);
+      $all(".mobile-nav-link").forEach(function(link) { link.addEventListener("click", closeMenu); });
+
+      $("#cart-btn").addEventListener("click", openCart);
+      $("#mobile-cart-btn").addEventListener("click", openCart);
+      cartClose.addEventListener("click", closeCart);
+      cartOverlay.addEventListener("click", closeCart);
+      cartItemsEl.addEventListener("click", function(event) {
+        var button = event.target.closest("[data-action]");
+        if (!button) return;
+        var cart = loadCart();
+        var index = Number(button.dataset.index);
+        var action = button.dataset.action;
+        if (!cart[index]) return;
+        if (action === "inc") cart[index].quantity = (Number(cart[index].quantity) || 0) + 1;
+        if (action === "dec") {
+          cart[index].quantity = (Number(cart[index].quantity) || 0) - 1;
+          if (cart[index].quantity <= 0) cart.splice(index, 1);
+        }
+        if (action === "remove") cart.splice(index, 1);
+        saveCart(cart);
+        renderCart();
+      });
+      $("#clear-cart-btn").addEventListener("click", function() {
+        saveCart([]);
+        renderCart();
+        showToast("Cart cleared");
+      });
+      $("#checkout-btn").addEventListener("click", function() {
+        var cart = loadCart();
+        if (!cart.length) {
+          showToast("Your cart is empty");
+          return;
+        }
+        var lines = ["Hi! I'd like to order from Celestial Good:", ""];
+        cart.forEach(function(item) {
+          lines.push("• " + item.name + " (" + item.weight + ") × " + item.quantity + " — " + formatINR((Number(item.price) || 0) * (Number(item.quantity) || 0)));
+        });
+        lines.push("");
+        lines.push("Total: " + formatINR(cartTotal(cart)));
+        lines.push("");
+        lines.push("Payment: Cash on Delivery");
+        window.open("https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(lines.join("\n")), "_blank", "noopener");
+      });
+
+      if (filterHost) {
+        filterHost.addEventListener("click", function(event) {
+          var button = event.target.closest(".chip");
+          if (!button) return;
+          activeFilter = button.dataset.filter || "all";
+          $all(".chip", filterHost).forEach(function(item) { item.classList.toggle("active", item === button); });
+          applyFilters();
+        });
+      }
+      searchInput.addEventListener("input", function() {
+        searchBox.classList.toggle("has-value", searchInput.value.length > 0);
+        applyFilters();
+      });
+      searchClear.addEventListener("click", function() {
+        searchInput.value = "";
+        searchBox.classList.remove("has-value");
+        applyFilters();
+        searchInput.focus();
+      });
+      sortSelect.addEventListener("change", applyFilters);
+      $("#reset-filters").addEventListener("click", function() {
+        searchInput.value = "";
+        searchBox.classList.remove("has-value");
+        sortSelect.value = "featured";
+        activeFilter = "all";
+        renderFilters();
+        applyFilters();
+      });
+
+      grid.addEventListener("click", function(event) {
+        var variant = event.target.closest(".variant-select .chip");
+        if (variant) {
+          var group = variant.closest(".variant-select");
+          var card = variant.closest(".product-card");
+          $all(".chip", group).forEach(function(item) {
+            item.classList.remove("is-selected");
+            item.setAttribute("aria-pressed", "false");
+          });
+          variant.classList.add("is-selected");
+          variant.setAttribute("aria-pressed", "true");
+          updateVariantPrice(card, variant);
+          return;
+        }
+
+        var addButton = event.target.closest(".btn-add");
+        if (addButton) {
+          addCardToCart(addButton.closest(".product-card"));
+          return;
+        }
+
+        var readMore = event.target.closest(".read-more-btn");
+        if (readMore) {
+          var wrap = readMore.closest(".product-desc-wrap");
+          var desc = $(".product-desc", wrap);
+          var isOpen = readMore.getAttribute("aria-expanded") === "true";
+          desc.textContent = isOpen ? desc.dataset.short : desc.dataset.full;
+          readMore.setAttribute("aria-expanded", String(!isOpen));
+          readMore.innerHTML = (isOpen ? "Read more" : "Show less") + ' <span class="read-more-icon" aria-hidden="true">→</span>';
+        }
+      });
+
+      document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+          closeMenu();
+          closeCart();
+        }
+      });
+    }
+
+    async function init() {
+      initEvents();
+      renderCart();
+      onScroll();
+      observeReveals();
+      await loadSettings();
+      await loadProducts();
+    }
+
+    init();
+  })();
+  </script>
+</body>
+</html>

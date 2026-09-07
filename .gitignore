@@ -1,5 +1,20 @@
-node_modules
-.aider*
+node_modules/
 .env
+.env.local
+.env.development
+.env.production
+*.log
+npm-debug.log*
+.yarn-debug.log*
+.yarn-error.log*
 .DS_Store
-dist/.vercel
+dist/
+public/uploads/
+*.key
+*.json
+.idea/
+.vscode/
+# macOS
+*.DS_Store
+# VS Code settings
+.vscode/

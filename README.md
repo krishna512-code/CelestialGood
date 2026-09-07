@@ -1,26 +1,57 @@
-# Celestial Goods
+# Celestial Goods — Organic & Artisanal Delicacies E-Commerce
 
-A static website for Celestial Goods, an organic and artisanal delicacies storefront.
+Full-stack E-Commerce platform for **Celestial Goods**, featuring a dynamic storefront and an interactive admin dashboard backed by SQLite.
 
-## Preview the site locally
+---
 
-1. Open a terminal in the repository root.
-2. Run:
-   ```bash
-   cd dist
-   python3 -m http.server 8000
-   ```
-3. Open these URLs in your browser:
-   - **Brochure landing:** http://localhost:8000
-   - **Online shop:** http://localhost:8000/shop.html
+## 🚀 Quick Start
 
-## About the build
+### 1. Install Dependencies
+```bash
+npm install
+```
 
-- The preview site is served from the `dist/` folder.
-- `dist/index.html` is the PDF-aligned brochure landing page (brand story, products, contact).
-- `dist/shop.html` loads the full e-commerce store (cart, COD, admin) from `dist/assets/`.
+### 2. Start Servers
 
-## Notes
+To run **both** Storefront and Admin backend concurrently:
+```bash
+npm run start:all
+# or
+npm run dev
+```
 
-- The project currently contains the built static output. If you want to work from source, add the app source files alongside this repository.
-- Update the WhatsApp link in `dist/index.html` when a phone number is available (currently uses a placeholder).
+Or run them individually:
+```bash
+# Storefront Server (Port 3000)
+npm run start:storefront
+
+# Admin Dashboard Server (Port 5050)
+npm run start:admin
+```
+
+---
+
+## 📍 Port Architecture
+
+| Application | URL | Purpose |
+| :--- | :--- | :--- |
+| **Storefront App** | `http://localhost:3000` | Main customer-facing e-commerce shop, product catalog, cart, and checkout |
+| **Admin Dashboard** | `http://localhost:5050` | Admin portal for managing products, billboards, categories, orders, and settings |
+
+---
+
+## 🔑 Admin Login Credentials
+
+- **URL:** `http://localhost:5050`
+- **Username:** `admin`
+- **Password:** `admin`
+
+---
+
+## ✨ Features & Capabilities
+
+- 🛍️ **Dynamic Front-End Hydration:** Real-time data loading for products, categories, billboards/advertisements, testimonials, and site settings directly from SQLite.
+- 🛡️ **Interactive Admin Portal:** Full CRUD management for products (prices, variants, images, badges), billboards/hero banners, categories, and site settings.
+- 📊 **Order Management & Analytics:** Real-time order tracking, revenue statistics, and graph analytics.
+- 🛒 **Seamless Checkout:** Customer order placement directly integrated with backend order processing.
+- 🗄️ **Zero External DB Overhead:** Native SQLite (`node:sqlite`) with WAL mode for fast concurrent operations.
