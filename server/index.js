@@ -16,7 +16,7 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.get('/admin', (req, res) => { res.sendFile(join(__dirname, '..', 'public', 'admin', 'index.html')); });
-app.use(express.static(join(__dirname, '..', 'public')));
+app.use(express.static(join(__dirname, '..', 'public'), { maxAge: '30d' }));
 
 const sessions = {};
 
