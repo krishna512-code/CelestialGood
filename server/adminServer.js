@@ -9,7 +9,7 @@ import { hashPassword, verifyPassword } from './middleware/auth.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.ADMIN_PORT || 5050;
+const PORT = process.env.ADMIN_PORT || 5051;
 
 // Initialize DB schema
 initDatabase();
