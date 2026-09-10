@@ -255,7 +255,13 @@ app.delete('/api/faq/:id', (req, res) => {
 app.get('/', (req, res) => { res.sendFile(join(__dirname, '..', 'public', 'index.html')); });
 app.get('/shop', (req, res) => { res.sendFile(join(__dirname, '..', 'public', 'shop.html')); });
 
-app.listen(PORT, () => {
-  console.log(`Celestial Good server running at http://localhost:${PORT}`);
-  console.log(`Admin panel at http://localhost:${PORT}/admin`);
-});
+const PORT = process.env.PORT || 5050;
+
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Celestial Good server running at http://localhost:${PORT}`);
+    console.log(`Admin panel at http://localhost:${PORT}/admin`);
+  });
+}
+
+export default app;

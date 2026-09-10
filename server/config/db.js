@@ -158,10 +158,20 @@ export function initDatabase() {
     );
   `);
 
-  // Default Admin User: admin / admin
-  // bcrypt hash for 'admin'
-  const adminHash = '$2a$10$bhnQw/kC3tUvcpV7l8x5.O7lmeu1/We9bhwY4BXRYRV2.UQXwFyKC';
-  db.prepare(`INSERT OR IGNORE INTO admin_users (id, username, password_hash) VALUES (1, 'admin', ?)`).run(adminHash);
+    // Default Admin User: admin / admin
+    // bcrypt hash for 'admin'
+    // const adminHash = '$2a$10$bhnQw/kC3tUvcpV7l8x5.O7lmeu1/We9bhwY4BXRYRV2.UQXwFyKC';
+    // db.prepare(`INSERT OR IGNORE INTO admin_users (id, username, password_hash) VALUES (1, 'admin', ?)`).run(adminHash);
+
+    // Optional Owner Bootstrap via environment variables
+    if (process.env.OWNER_USERNAME && process.env.OWNER_PASSWORD) {
+      const existing = db.prepare('SELECT * FROM admin_users WHERE username = ?').get(process.env.OWNER_USERNAME);
+      if (!existing) {
+        const ownerHash = hashPassword(process.env.OWNER_PASSWORD);
+        db.prepare('INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)')
+          .run(process.env.OWNER_USERNAME, ownerHash, 'owner');
+      }
+    }
 
   // Default Site Settings
   db.prepare(`INSERT OR IGNORE INTO site_settings (id) VALUES (1)`).run();
