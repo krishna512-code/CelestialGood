@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Celestial Good | Premium Organic Jaggery, Ghee & Spices</title>
+    <meta name="description" content="Celestial Good brings you premium organic jaggery, ghee, honey, makhana, and handcrafted spices — sourced directly from Indian farmers.">
+    <meta property="og:title" content="Celestial Good | Pure & Natural Staples">
+    <meta property="og:description" content="Farm-fresh, traditional, and chemical-free pantry staples delivered to your doorstep.">
+    <meta property="og:image" content="/assets/celestial-good-logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/brochure.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+  </head>
+  <body>
+    <div id="global-loader" class="loader" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.8);z-index:9999;justify-content:center;align-items:center;">
+      <div class="spinner"></div>
+    </div>
+    <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+    <!-- Loading spinner (shown while data loads) -->
+    <div id="global-loader" class="loader" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.8);z-index:9999;justify-content:center;align-items:center;">
+      <div class="spinner"></div>
+    </div>
+    <div class="announce-bar" id="announce-bar"></div>
+    <header class="site-header" id="site-header">
+      <div class="container header-inner">
+        <a href="/" class="logo" aria-label="Celestial Good home">
+          <img src="assets/celestial-good-logo.png" alt="Celestial Good Logo" class="logo-img">
+        </a>
+        <nav class="nav" aria-label="Main navigation">
+          <a href="#story">Our Story</a>
+          <a href="#products">Products</a>
+          <a href="/shop.html" class="is-current">Shop</a>
+          <a href="#faq">FAQ</a>
+          <a href="#contact">Contact</a>
+        </nav>
+        <div class="header-right">
+          <a href="/shop.html" class="cart-btn" aria-label="View cart and shop">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="21" r="1.6"/><circle cx="19" cy="21" r="1.6"/><path d="M2.5 3h2l2.4 12.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6l1.4-7.4H6"/></svg>
+            <span class="cart-label">Cart</span>
+            <span class="cart-count" id="header-cart-count" hidden>0</span>
+          </a>
+          <a href="/shop.html" class="btn btn-primary btn-sm">Shop Now</a>
+          <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-nav"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </header>
+    <div class="nav-overlay" id="nav-overlay"></div>
+    <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
+      <div class="mobile-nav-head"><img src="assets/celestial-good-logo.png" alt="Celestial Good" class="mobile-nav-logo"><button class="mobile-nav-close" id="mobile-nav-close" aria-label="Close menu">&times;</button></div>
+      <a href="#story" class="mobile-nav-link">Our Story</a>
+      <a href="#products" class="mobile-nav-link">Products</a>
+      <a href="/shop.html" class="mobile-nav-link">Online Shop</a>
+      <a href="#faq" class="mobile-nav-link">FAQ</a>
+      <a href="#contact" class="mobile-nav-link">Contact</a>
+      <a href="/shop.html" class="btn btn-gold btn-block mobile-nav-cta">Shop Now</a>
+      <div class="mobile-nav-foot"><p class="mobile-nav-motto" id="mobile-motto"></p><a class="mobile-nav-phone" href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer">WhatsApp: +91 87892 67181</a></div>
+    </nav>
+    <main>
+      <section class="hero" id="hero-section">
+        <div class="container hero-grid">
+          <div class="hero-content">
+            <span class="hero-eyebrow" id="hero-eyebrow"></span>
+            <h1 class="hero-title" id="hero-title"></h1>
+            <p class="hero-desc" id="hero-desc"></p>
+            <div class="hero-actions">
+              <a href="/shop.html" class="btn btn-gold btn-lg">Explore Products <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+              <a href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2Zm5.8 14.1c-.25.7-1.45 1.35-2 1.4-.55.05-1.05.2-3.55-.95s-4-3.85-4.15-4.05c-.15-.2-1-1.4-1-2.65s.65-1.85.9-2.1c.25-.25.5-.3.7-.3h.5c.15 0 .35-.05.55.4.2.5.7 1.7.75 1.85.05.1.1.25 0 .4-.1.2-.2.3-.35.5s-.3.35-.45.5c-.15.15-.3.3-.15.6.15.3.7 1.15 1.5 1.85.95.85 1.75 1.15 2.05 1.3.3.15.5.1.65-.05.2-.2.7-.8.9-1.05.2-.3.4-.25.65-.15.25.1 1.6.75 1.85.9.25.1.45.15.5.25.05.15.05.7-.2 1.4Z"/></svg> Order on WhatsApp</a>
+            </div>
+            <div class="hero-stats">
+              <div class="hero-stat"><span class="hero-stat-num">100%</span><span class="hero-stat-label">Organic & Natural</span></div>
+              <div class="hero-stat"><span class="hero-stat-num">8+</span><span class="hero-stat-label">Artisan Products</span></div>
+              <div class="hero-stat"><span class="hero-stat-num">Pan-India</span><span class="hero-stat-label">Home Delivery</span></div>
+            </div>
+          </div>
+          <div class="billboard" id="billboard" aria-roledescription="carousel" aria-label="Featured products">
+            <div class="billboard-slide is-active" id="billboard-slide-0">
+              <img src="assets/organic_jaggery_hero_1785581871908-B_1vChWj.jpg" alt="Featured product" width="800" height="600">
+              <span class="billboard-badge badge-hot">🔥 Bestseller</span>
+              <div class="billboard-caption"><p class="billboard-cat" id="bc-cat"></p><p class="billboard-name" id="bc-name"></p></div>
+              <a href="/shop.html#shop-jaggery-cubes" class="btn btn-gold btn-sm billboard-cta">Shop Now</a>
+            </div>
+            <button class="billboard-arrow prev" type="button" aria-label="Previous">&#8249;</button>
+            <button class="billboard-arrow next" type="button" aria-label="Next">&#8250;</button>
+            <div class="billboard-dots" role="tablist" aria-label="Slide navigation"></div>
+          </div>
+        </div>
+      </section>
+      <div class="marquee" aria-hidden="true"><div class="marquee-track" id="marquee-track"></div></div>
+      <section id="story" class="section section-alt">
+        <div class="container">
+          <div class="section-head center reveal">
+            <span class="section-label">Our Story</span>
+            <h2 class="section-title">From Farm to Your Table</h2>
+            <p class="section-lead">Celestial Good brings honest Indian pantry staples closer to home: farmer-sourced, small-batch, and made with the kind of care you can taste.</p>
+          </div>
+          <div class="story-grid">
+            <article class="story-card reveal"><div class="story-card-icon" aria-hidden="true">🌾</div><h3>Farmer First</h3><p>We source directly from regional growers and artisan makers so better food also means fairer, steadier livelihoods.</p></article>
+            <article class="story-card reveal"><div class="story-card-icon" aria-hidden="true">🏺</div><h3>Made the Slow Way</h3><p>Our jaggery, ghee, honey, makhana, spices, and pickles follow traditional methods, small batches, and patient preparation.</p></article>
+            <article class="story-card reveal"><div class="story-card-icon" aria-hidden="true">🌿</div><h3>Clean Everyday Food</h3><p>No sulphur, artificial clarifiers, preservatives, or shortcuts. Just naturally rich staples for families who read labels.</p></article>
+          </div>
+        </div>
+      </section>
+      <section id="products" class="section">
+        <div class="container">
+          <div class="section-head center reveal"><span class="section-label">Our Products</span><h2 class="section-title">Artisanal Delicacies</h2><p class="section-lead">Premium organic and handcrafted foods, each with a story rooted in Indian tradition.</p></div>
+          <div class="product-grid" id="featured-products"></div>
+          <div style="text-align:center; margin-top: 36px;" class="reveal"><a href="/shop.html" class="btn btn-gold btn-lg">View Full Shop <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+        </div>
+      </section>
+      <section class="section section-alt" id="testimonials-section">
+        <div class="container">
+          <div class="section-head center reveal"><span class="section-label">Loved by Families</span><h2 class="section-title">What Our Customers Say</h2></div>
+          <div class="testi-grid" id="testi-grid"></div>
+        </div>
+      </section>
+      <section id="faq" class="section">
+        <div class="container">
+          <div class="section-head center reveal"><span class="section-label">Good to Know</span><h2 class="section-title">Frequently Asked Questions</h2></div>
+          <div class="faq-list" id="faq-list"></div>
+        </div>
+      </section>
+      <section id="contact" class="cta-band">
+        <div class="container">
+          <span class="section-label">Get in Touch</span>
+          <h2 class="section-title">Taste the Tradition, Delivered Fresh</h2>
+          <p class="section-lead">Questions, bulk gifting, or a quick COD order? Message us and we will help you choose the right pack size before dispatch.</p>
+          <div class="cta-actions">
+            <a href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-lg"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2Zm5.8 14.1c-.25.7-1.45 1.35-2 1.4-.55.05-1.05.2-3.55-.95s-4-3.85-4.15-4.05c-.15-.2-1-1.4-1-2.65s.65-1.85.9-2.1c.25-.25.5-.3.7-.3h.5c.15 0 .35-.05.55.4.2.5.7 1.7.75 1.85.05.1.1.25 0 .4-.1.2-.2.3-.35.5s-.3.35-.45.5c-.15.15-.3.3-.15.6.15.3.7 1.15 1.5 1.85.95.85 1.75 1.15 2.05 1.3.3.15.5.1.65-.05.2-.2.7-.8.9-1.05.2-.3.4-.25.65-.15.25.1 1.6.75 1.85.9.25.1.45.15.5.25.05.15.05.7-.2 1.4Z"/></svg> Order on WhatsApp</a>
+            <a href="mailto:Sumit@celestialgood.com" class="btn btn-outline-light btn-lg">Sumit@celestialgood.com</a>
+            <a href="/shop.html" class="btn btn-gold btn-lg">Browse Online Shop</a>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand"><img src="assets/celestial-good-logo.png" alt="Celestial Good" class="footer-logo-img"><p id="footer-desc">Pure, organic, and traditionally made delicacies — sourced directly from Indian farmers.</p>
+            <div class="footer-social">
+              <a href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2Zm5.8 14.1c-.25.7-1.45 1.35-2 1.4-.55.05-1.05.2-3.55-.95s-4-3.85-4.15-4.05c-.15-.2-1-1.4-1-2.65s.65-1.85.9-2.1c.25-.25.5-.3.7-.3h.5c.15 0 .35-.05.55.4.2.5.7 1.7.75 1.85.05.1.1.25 0 .4-.1.2-.2.3-.35.5s-.3.35-.45.5c-.15.15-.3.3-.15.6.15.3.7 1.15 1.5 1.85.95.85 1.75 1.15 2.05 1.3.3.15.5.1.65-.05.2-.2.7-.8.9-1.05.2-.3.4-.25.65-.15.25.1 1.6.75 1.85.9.25.1.45.15.5.25.05.15.05.7-.2 1.4Z"/></svg></a>
+              <a href="mailto:Sumit@celestialgood.com" aria-label="Email"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="m2 7 10 6L22 7"/></svg></a>
+              <a href="/shop.html" aria-label="Online shop"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="21" r="1.6"/><circle cx="19" cy="21" r="1.6"/><path d="M2.5 3h2l2.4 12.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6l1.4-7.4H6"/></svg></a>
+            </div>
+          </div>
+          <div class="footer-col"><h4>Explore</h4><ul><li><a href="/">Home</a></li><li><a href="/#story">Our Story</a></li><li><a href="/#products">Products</a></li><li><a href="/shop.html">Online Shop</a></li></ul></div>
+          <div class="footer-col"><h4>Support</h4><ul><li><a href="/#faq">FAQ</a></li><li><a href="/#contact">Contact Us</a></li><li><a href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer">WhatsApp Orders</a></li></ul></div>
+          <div class="footer-col"><h4>Contact</h4><ul><li><a href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer">+91 87892 67181</a></li><li><a href="mailto:Sumit@celestialgood.com">Sumit@celestialgood.com</a></li><li><a href="/shop.html">COD across India</a></li></ul></div>
+        </div>
+        <div class="footer-bottom"><span id="copyright-text">&copy; 2026 Celestial Good. All rights reserved.</span></div>
+      </div>
+    </footer>
+    <div class="fab-stack"><button class="fab fab-top" id="back-to-top" aria-label="Back to top"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button><a class="fab fab-whatsapp" href="https://wa.me/918789267181" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2Zm5.8 14.1c-.25.7-1.45 1.35-2 1.4-.55.05-1.05.2-3.55-.95s-4-3.85-4.15-4.05c-.15-.2-1-1.4-1-2.65s.65-1.85.9-2.1c.25-.25.5-.3.7-.3h.5c.15 0 .35-.05.55.4.2.5.7 1.7.75 1.85.05.1.1.25 0 .4-.1.2-.2.3-.35.5s-.3.35-.45.5c-.15.15-.3.3-.15.6.15.3.7 1.15 1.5 1.85.95.85 1.75 1.15 2.05 1.3.3.15.5.1.65-.05.2-.2.7-.8.9-1.05.2-.3.4-.25.65-.15.25.1 1.6.75 1.85.9.25.1.45.15.5.25.05.15.05.7-.2 1.4Z"/></svg></a></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"><span class="tick" aria-hidden="true">✓</span><span id="toast-msg">Added to cart</span></div>
+    <script>
+    (function() {
+      "use strict";
+
+      var DEFAULT_WA = "918789267181";
+      var DEFAULT_EMAIL = "Sumit@celestialgood.com";
+      var fallbackImage = "assets/organic_jaggery_hero_1785581871908-B_1vChWj.jpg";
+
+      function $(selector, scope) { return (scope || document).querySelector(selector); }
+      function $all(selector, scope) { return Array.prototype.slice.call((scope || document).querySelectorAll(selector)); }
+      function escapeHTML(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function(char) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char];
+        });
+      }
+      function formatINR(value) {
+        return "₹" + Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+      }
+      function slugFromName(value) {
+        return String(value || "product").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      }
+      function normalizeVariants(product) {
+        if (Array.isArray(product.variants) && product.variants.length) return product.variants;
+        if (typeof product.variants === "string" && product.variants.trim()) {
+          try {
+            var parsed = JSON.parse(product.variants);
+            if (Array.isArray(parsed) && parsed.length) return parsed;
+          } catch (e) {}
+        }
+        return [{ weight: "Pack", price: product.price || 0, mrp: product.mrp || product.price || 0 }];
+      }
+      function compactText(value, length) {
+        var text = String(value || "").trim();
+        return text.length > length ? text.slice(0, length).trim().replace(/[.,;:!?-]+$/, "") + "..." : text;
+      }
+      function readMoreButton(needsToggle) {
+        if (!needsToggle) return "";
+        return '<button type="button" class="read-more-btn" aria-expanded="false">Read more <span class="read-more-icon" aria-hidden="true">→</span></button>';
+      }
+      function productHref(product) {
+        return "/shop.html#shop-" + encodeURIComponent(product.slug || slugFromName(product.name));
+      }
+      function observeReveals(scope) {
+        var root = scope || document;
+        var items = $all(".reveal", root).filter(function(el) { return !el.classList.contains("in"); });
+        if (!items.length) return;
+        if (!("IntersectionObserver" in window)) {
+          items.forEach(function(el) { el.classList.add("in"); });
+          return;
+        }
+        var io = new IntersectionObserver(function(entries) {
+          entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("in");
+              io.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.12 });
+        items.forEach(function(el) { io.observe(el); });
+      }
+
+      async function fetchJSON(url, fallback) {
+        try {
+          var response = await fetch(url);
+          if (!response.ok) throw new Error("Request failed");
+          return await response.json();
+        } catch (e) {
+          return fallback;
+        }
+      }
+
+      async function loadSettings() {
+        var s = await fetchJSON("/api/settings", {});
+        var phone = String(s.whatsapp_number || DEFAULT_WA).replace(/[^0-9]/g, "") || DEFAULT_WA;
+        var email = s.email || DEFAULT_EMAIL;
+
+        $("#hero-title").textContent = s.hero_title || "connecting farmers to the world";
+        $("#hero-eyebrow").textContent = s.hero_subtitle || "Farm Direct · 100% Organic";
+        $("#hero-desc").textContent = s.hero_description || "";
+        $("#announce-bar").innerHTML = '<span class="gold">' + escapeHTML(s.announcement_text || "Free delivery on orders above ₹999 · COD available across India") + "</span>";
+        $("#mobile-motto").textContent = "• " + (s.hero_title || "Connecting farmers to the world") + " •";
+        $("#footer-desc").textContent = s.footer_description || "Pure, organic, and traditionally made delicacies — sourced directly from Indian farmers and delivered to your doorstep.";
+        $("#copyright-text").textContent = s.copyright_text || "© 2026 Celestial Good. All rights reserved.";
+
+        $all('a[href*="wa.me"]').forEach(function(link) { link.href = "https://wa.me/" + phone; });
+        $all('a[href^="mailto:"]').forEach(function(link) { link.href = "mailto:" + email; });
+      }
+
+      async function loadBanners() {
+        var banners = await fetchJSON("/api/banners", []);
+        var billboard = $("#billboard");
+        if (!billboard) return;
+
+        if (!Array.isArray(banners) || !banners.length) {
+          setupBillboard(billboard);
+          return;
+        }
+
+        billboard.innerHTML = banners.map(function(banner, index) {
+          var image = banner.image_url || fallbackImage;
+          var link = banner.link || "/shop.html";
+          return `
+            <div class="billboard-slide ${index === 0 ? "is-active" : ""}">
+              <img src="${escapeHTML(image)}" alt="${escapeHTML(banner.heading || "Celestial Good featured product")}" width="800" height="600">
+              ${banner.badge ? `<span class="billboard-badge">${escapeHTML(banner.badge)}</span>` : ""}
+              <div class="billboard-caption">
+                <p class="billboard-cat">${escapeHTML(banner.heading || "")}</p>
+                <p class="billboard-name">${escapeHTML(banner.subtitle || banner.label || "")}</p>
+              </div>
+              <a href="${escapeHTML(link)}" class="btn btn-gold btn-sm billboard-cta">Shop Now <span aria-hidden="true">→</span></a>
+            </div>
+          `;
+        }).join("") + '<button class="billboard-arrow prev" type="button" aria-label="Previous">‹</button><button class="billboard-arrow next" type="button" aria-label="Next">›</button><div class="billboard-dots" role="tablist" aria-label="Slide navigation"></div>';
+
+        setupBillboard(billboard);
+      }
+
+      function setupBillboard(billboard) {
+        var slides = $all(".billboard-slide", billboard);
+        var dotsHost = $(".billboard-dots", billboard);
+        var prevBtn = $(".billboard-arrow.prev", billboard);
+        var nextBtn = $(".billboard-arrow.next", billboard);
+        var timer = null;
+        var index = 0;
+
+        if (!slides.length || !dotsHost) return;
+        dotsHost.innerHTML = slides.map(function(_, i) {
+          return '<button type="button" class="' + (i === 0 ? "is-active" : "") + '" aria-label="Slide ' + (i + 1) + '"></button>';
+        }).join("");
+        var dots = $all("button", dotsHost);
+
+        function show(nextIndex) {
+          slides[index].classList.remove("is-active");
+          if (dots[index]) dots[index].classList.remove("is-active");
+          index = (nextIndex + slides.length) % slides.length;
+          slides[index].classList.add("is-active");
+          if (dots[index]) dots[index].classList.add("is-active");
+        }
+        function stop() {
+          if (timer) {
+            window.clearInterval(timer);
+            timer = null;
+          }
+        }
+        function start() {
+          stop();
+          if (slides.length > 1) timer = window.setInterval(function() { show(index + 1); }, 4500);
+        }
+
+        if (prevBtn) prevBtn.style.display = slides.length > 1 ? "" : "none";
+        if (nextBtn) nextBtn.style.display = slides.length > 1 ? "" : "none";
+        dots.forEach(function(dot, i) {
+          dot.addEventListener("click", function() {
+            show(i);
+            start();
+          });
+        });
+        if (prevBtn) prevBtn.addEventListener("click", function() { show(index - 1); start(); });
+        if (nextBtn) nextBtn.addEventListener("click", function() { show(index + 1); start(); });
+        billboard.addEventListener("mouseenter", stop);
+        billboard.addEventListener("mouseleave", start);
+        start();
+      }
+
+      function loadMarquee() {
+        var track = $("#marquee-track");
+        if (!track) return;
+        var items = ["100% Organic", "Direct from Farmers", "Chemical-Free", "Heritage Recipes", "COD Available", "Pan-India Delivery"];
+        var markup = items.map(function(item) {
+          return '<span class="marquee-item"><span class="star">✦</span> ' + escapeHTML(item) + "</span>";
+        }).join("");
+        track.innerHTML = markup + markup;
+      }
+
+      async function loadFeaturedProducts() {
+        var products = await fetchJSON("/api/products?featured=1", []);
+        var grid = $("#featured-products");
+        if (!grid) return;
+
+        grid.innerHTML = products.slice(0, 6).map(function(product) {
+          var variants = normalizeVariants(product);
+          var primaryVariant = variants[0] || {};
+          var fullDescription = product.description || product.short_desc || "";
+          var shortDescription = product.short_desc || compactText(fullDescription, 128);
+          var needsToggle = fullDescription && fullDescription.length > shortDescription.length + 12;
+          var mrp = Number(primaryVariant.mrp || product.mrp || 0);
+          var price = Number(primaryVariant.price || product.price || 0);
+          var imageMarkup = product.image_url
+            ? '<div class="product-visual"><img src="' + escapeHTML(product.image_url) + '" alt="' + escapeHTML(product.name) + '" loading="lazy"></div>'
+            : '<div class="product-visual art-bg"><span class="art-emoji">🏺</span></div>';
+
+          return `
+            <article class="product-card reveal">
+              ${imageMarkup}
+              ${product.badge ? `<span class="product-flag">${escapeHTML(product.badge)}</span>` : ""}
+              <div class="product-body">
+                <p class="product-category">${escapeHTML(product.category_name || "")}</p>
+                <h3 class="product-title">${escapeHTML(product.name)}</h3>
+                <div class="product-desc-wrap">
+                  <p class="product-desc" data-short="${escapeHTML(shortDescription)}" data-full="${escapeHTML(fullDescription)}">${escapeHTML(shortDescription)}</p>
+                  ${readMoreButton(needsToggle)}
+                </div>
+                <div class="price-row"><span class="price-now">${formatINR(price)}</span><span class="price-unit">onwards</span>${mrp > price ? `<span class="price-mrp">${formatINR(mrp)}</span>` : ""}</div>
+                <div class="product-actions"><a href="${productHref(product)}" class="btn btn-primary">Shop Now <span aria-hidden="true">→</span></a></div>
+              </div>
+            </article>
+          `;
+        }).join("");
+        observeReveals(grid);
+      }
+
+      async function loadTestimonials() {
+        var testimonials = await fetchJSON("/api/testimonials", []);
+        var grid = $("#testi-grid");
+        if (!grid) return;
+        grid.innerHTML = testimonials.map(function(item) {
+          var initial = (item.avatar || item.name || "C").charAt(0).toUpperCase();
+          return `
+            <article class="testi-card reveal">
+              <div class="testi-stars" aria-label="5 out of 5 stars">★★★★★</div>
+              <p class="testi-text">"${escapeHTML(item.text || "")}"</p>
+              <div class="testi-person"><span class="testi-avatar" aria-hidden="true">${escapeHTML(initial)}</span>
+              <div><p class="testi-name">${escapeHTML(item.name || "Customer")}</p><p class="testi-meta">${escapeHTML(item.location || "India")} · Verified Buyer</p></div></div>
+            </article>
+          `;
+        }).join("");
+        observeReveals(grid);
+      }
+
+      async function loadFAQ() {
+        var faqs = await fetchJSON("/api/faq", []);
+        var list = $("#faq-list");
+        if (!list) return;
+        list.innerHTML = faqs.map(function(item, i) {
+          return `
+            <div class="faq-item reveal" style="--reveal-delay:${i * 0.05}s">
+              <button class="faq-q" type="button" aria-expanded="false">${escapeHTML(item.question)}<span class="faq-icon" aria-hidden="true">⌄</span></button>
+              <div class="faq-a"><div class="faq-a-inner">${escapeHTML(item.answer)}</div></div>
+            </div>
+          `;
+        }).join("");
+        observeReveals(list);
+      }
+
+      function initFAQ() {
+        var list = $("#faq-list");
+        if (!list) return;
+        list.addEventListener("click", function(event) {
+          var button = event.target.closest(".faq-q");
+          if (!button) return;
+          var item = button.closest(".faq-item");
+          var panel = button.nextElementSibling;
+          var isOpen = item.classList.contains("open");
+          $all(".faq-item.open", list).forEach(function(openItem) {
+            openItem.classList.remove("open");
+            $(".faq-a", openItem).style.maxHeight = "0px";
+            $(".faq-q", openItem).setAttribute("aria-expanded", "false");
+          });
+          item.classList.toggle("open", !isOpen);
+          button.setAttribute("aria-expanded", String(!isOpen));
+          panel.style.maxHeight = !isOpen ? panel.scrollHeight + "px" : "0px";
+        });
+      }
+
+      function initReadMore() {
+        document.addEventListener("click", function(event) {
+          var button = event.target.closest(".read-more-btn");
+          if (!button) return;
+          var wrap = button.closest(".product-desc-wrap");
+          var desc = $(".product-desc", wrap);
+          var isOpen = button.getAttribute("aria-expanded") === "true";
+          desc.textContent = isOpen ? desc.dataset.short : desc.dataset.full;
+          button.setAttribute("aria-expanded", String(!isOpen));
+          button.innerHTML = (isOpen ? "Read more" : "Show less") + ' <span class="read-more-icon" aria-hidden="true">→</span>';
+        });
+      }
+
+      function updateCartCount() {
+        try {
+          var cart = JSON.parse(localStorage.getItem("celestial-cart")) || [];
+          var count = cart.reduce(function(sum, item) { return sum + (Number(item.quantity) || 0); }, 0);
+          var badge = $("#header-cart-count");
+          if (badge && count > 0) {
+            badge.textContent = count;
+            badge.hidden = false;
+          }
+        } catch (e) {}
+      }
+
+      function initMobileNav() {
+        var hamburger = $("#hamburger");
+        var mobileNav = $("#mobile-nav");
+        var navOverlay = $("#nav-overlay");
+        var navClose = $("#mobile-nav-close");
+        if (!hamburger || !mobileNav || !navOverlay) return;
+        function openMenu() {
+          mobileNav.classList.add("open");
+          navOverlay.classList.add("open");
+          hamburger.classList.add("active");
+          hamburger.setAttribute("aria-expanded", "true");
+          document.body.style.overflow = "hidden";
+        }
+        function closeMenu() {
+          mobileNav.classList.remove("open");
+          navOverlay.classList.remove("open");
+          hamburger.classList.remove("active");
+          hamburger.setAttribute("aria-expanded", "false");
+          document.body.style.overflow = "";
+        }
+        hamburger.addEventListener("click", function() { mobileNav.classList.contains("open") ? closeMenu() : openMenu(); });
+        navOverlay.addEventListener("click", closeMenu);
+        if (navClose) navClose.addEventListener("click", closeMenu);
+        $all(".mobile-nav-link").forEach(function(link) { link.addEventListener("click", closeMenu); });
+        document.addEventListener("keydown", function(event) {
+          if (event.key === "Escape") closeMenu();
+        });
+      }
+
+      function initScrollUI() {
+        var progress = $("#scroll-progress");
+        var header = $("#site-header");
+        var backToTop = $("#back-to-top");
+        function onScroll() {
+          var doc = document.documentElement;
+          var max = doc.scrollHeight - window.innerHeight;
+          var pct = max > 0 ? (window.scrollY / max) * 100 : 0;
+          if (progress) progress.style.width = pct + "%";
+          if (header) header.classList.toggle("scrolled", window.scrollY > 24);
+          if (backToTop) backToTop.classList.toggle("show", window.scrollY > 600);
+        }
+        window.addEventListener("scroll", onScroll, { passive: true });
+        if (backToTop) backToTop.addEventListener("click", function() { window.scrollTo({ top: 0, behavior: "smooth" }); });
+        onScroll();
+      }
+
+      loadSettings();
+      loadBanners();
+      loadMarquee();
+      loadFeaturedProducts();
+      loadTestimonials();
+      loadFAQ();
+      initFAQ();
+      initReadMore();
+      initMobileNav();
+      initScrollUI();
+      observeReveals();
+      updateCartCount();
+    })();
+    </script>
+  </body>
+</html>

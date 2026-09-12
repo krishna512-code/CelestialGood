@@ -1,6 +1,7 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "framework": "static",
   "redirects": [
     {
       "source": "/shop",
@@ -44,19 +45,12 @@
       ]
     }
   ],
-  "framework": "node",
   "regions": ["iad1"],
   "crons": [],
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/404.html",
-      "has": [
-        {
-          "key": "match",
-          "value": "404"
-        }
-      ]
+      "destination": "/404.html"
     }
   ],
   "performanceBudgets": {

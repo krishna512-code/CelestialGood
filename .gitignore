@@ -16,8 +16,8 @@ npm-debug.log*
 # OS files
 .DS_Store
 
-# Build outputs
-dist/
+# Build outputs (dist/ is needed for Vercel deployment)
+# Only static assets, no JS bundles with secrets
 public/uploads/
 
 # Database files - NEVER commit database files with user data

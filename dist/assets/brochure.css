@@ -1,0 +1,68 @@
+/* Celestial Goods - Brochure Styles */
+:root {
+  --gold: #C4943D;
+  --gold-light: #D4A84B;
+  --gold-dark: #A67C2E;
+  --green-dark: #12291E;
+  --green: #1B4332;
+  --green-mid: #2E5D34;
+  --cream: #F5F0E8;
+  --cream-light: #FAF9F5;
+  --cream-dark: #EDE7DA;
+  --charcoal: #1C1C1A;
+  --border: #E2DACB;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', -apple-system, sans-serif; background: var(--cream); color: var(--charcoal); }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; border: none; transition: all 0.2s; }
+.btn-gold { background: var(--gold); color: #FFF; }
+.btn-gold:hover { background: var(--gold-dark); }
+.btn-primary { background: var(--green); color: #FFF; }
+.btn-primary:hover { background: var(--green-mid); }
+.btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--charcoal); }
+.btn-outline:hover { border-color: var(--green); color: var(--green); }
+.btn-sm { min-height: 32px; padding: 6px 12px; font-size: 12px; border-radius: 6px; }
+.btn-lg { min-height: 48px; padding: 14px 28px; font-size: 16px; }
+.btn-whatsapp { background: #25D366; color: #FFF; }
+.btn-outline-light { background: rgba(255,255,255,0.15); color: #FFF; border-color: rgba(255,255,255,0.3); }
+.btn-outline-light:hover { background: rgba(255,255,255,0.25); }
+.btn-block { width: 100%; }
+.hero { padding: 80px 0; }
+.hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+.hero-title { font-family: 'Cormorant Garamond', serif; font-size: 3.5rem; font-weight: 300; line-height: 1.1; }
+.hero-desc { font-size: 1.1rem; color: #666; margin: 20px 0; }
+.section { padding: 80px 0; }
+.section-alt { background: var(--cream-light); }
+.section-head { text-align: center; margin-bottom: 48px; }
+.section-title { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; color: var(--green); }
+.section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gold); }
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+.product-card { background: #FFF; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(27,67,50,0.04); }
+.product-body { padding: 20px; }
+.product-category { font-size: 12px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; }
+.product-title { font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; margin: 8px 0; }
+.price-now { font-size: 1.25rem; font-weight: 700; color: var(--green); }
+.price-mrp { font-size: 1rem; color: #999; text-decoration: line-through; margin-left: 8px; }
+footer.site-footer { background: var(--green-dark); color: rgba(255,255,255,0.8); padding: 60px 0 30px; }
+footer.site-footer h4 { color: #FFF; margin-bottom: 16px; }
+footer.site-footer a { color: rgba(255,255,255,0.6); text-decoration: none; }
+footer.site-footer a:hover { color: var(--gold-light); }
+.footer-bottom { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; margin-top: 40px; text-align: center; font-size: 14px; }
+.page-404 { display: flex; align-items: center; justify-content: center; min-height: 70vh; text-align: center; padding: 48px 20px; }
+.page-404 h1 { font-size: 8rem; line-height: 1; color: var(--gold); font-family: 'Cormorant Garamond', serif; margin-bottom: 8px; }
+.page-404 h2 { font-size: 1.5rem; margin-bottom: 12px; }
+.page-404 p { color: #666; margin-bottom: 28px; }
+.site-header { background: #FFF; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+.header-inner { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; }
+.logo-img { height: 40px; }
+.nav a { margin: 0 16px; text-decoration: none; color: var(--charcoal); font-size: 14px; }
+.nav a.is-current { color: var(--gold); font-weight: 600; }
+.cart-btn { position: relative; text-decoration: none; color: var(--charcoal); }
+.cart-count { position: absolute; top: -8px; right: -8px; background: var(--gold); color: #FFF; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+.announce-bar { background: var(--green-dark); color: #FFF; text-align: center; padding: 8px; font-size: 13px; }
+.marquee { background: var(--cream-light); padding: 12px 0; overflow: hidden; }
+.marquee-track { display: flex; gap: 40px; animation: scroll 30s linear infinite; }
+@keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.site-footer a:hover { color: var(--gold-light); }
