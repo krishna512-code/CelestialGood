@@ -40,11 +40,9 @@ npm run start:admin
 
 ---
 
-## 🔑 Admin Login Credentials
+## 🔑 Admin Access
 
-- **URL:** `http://localhost:5050`
-- **Username:** `admin`
-- **Password:** `admin`
+To access the admin panel, set up your admin credentials via the `OWNER_USERNAME` and `OWNER_PASSWORD` environment variables. The default admin account is created on first run through the seeding process.
 
 ---
 

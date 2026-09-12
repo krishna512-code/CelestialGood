@@ -12,11 +12,11 @@ const PORT = process.env.PORT || 5050;
 
 initDatabase();
 
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: false, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.get('/admin', (req, res) => { res.sendFile(join(__dirname, '..', 'public', 'admin', 'index.html')); });
-app.use(express.static(join(__dirname, '..', 'public'), { maxAge: '30d' }));
+app.use(express.static(join(__dirname, '..', 'public'), { maxAge: '1d' }));
 
 const sessions = {};
 
@@ -254,6 +254,10 @@ app.delete('/api/faq/:id', (req, res) => {
 
 app.get('/', (req, res) => { res.sendFile(join(__dirname, '..', 'public', 'index.html')); });
 app.get('/shop', (req, res) => { res.sendFile(join(__dirname, '..', 'public', 'shop.html')); });
+
+app.use((req, res) => {
+  res.status(404).sendFile(join(__dirname, '..', 'public', '404.html'));
+});
 
 const PORT = process.env.PORT || 5050;
 

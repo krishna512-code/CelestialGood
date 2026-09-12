@@ -7,5 +7,64 @@
       "destination": "/shop.html",
       "statusCode": 200
     }
-  ]
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "framework": "node",
+  "regions": ["iad1"],
+  "crons": [],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/404.html",
+      "has": [
+        {
+          "key": "match",
+          "value": "404"
+        }
+      ]
+    }
+  ],
+  "performanceBudgets": {
+    "maxAssetSize": 200000,
+    "maxEntrypointSize": 300000,
+    "maxTotalSize": 500000,
+    "maxImageSize": 100000,
+    "maxJavaScriptSize": 150000,
+    "maxCssSize": 50000
+  }
 }

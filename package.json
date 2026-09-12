@@ -1,0 +1,39 @@
+{
+  "name": "celestial-goods",
+  "version": "1.0.0",
+  "description": "Organic & Artisanal Delicacies E-Commerce Platform",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "start:storefront": "node server/index.js",
+    "start:admin": "node server/adminServer.js",
+    "start:all": "concurrently \"npm run start:storefront\" \"npm run start:admin\"",
+    "dev": "concurrently \"node server/index.js\" \"node server/adminServer.js\"",
+    "test": "node --test tests/",
+    "lint": "eslint server/",
+    "build": "echo \"No build step required - static frontend served by Express\""
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1",
+    "bcryptjs": "^2.4.3",
+    "node:sqlite": "^3.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "eslint": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "performanceBudget": {
+    "maxAssetSize": 200000,
+    "maxEntrypointSize": 300000,
+    "maxTotalSize": 500000,
+    "maxImageSize": 100000,
+    "maxJavaScriptSize": 150000,
+    "maxCssSize": 50000
+  }
+}

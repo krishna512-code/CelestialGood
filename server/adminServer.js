@@ -31,11 +31,11 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 // Middleware
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: false, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -754,11 +754,14 @@ app.get(['/', '/admin', '/admin/*'], (req, res) => {
   res.sendFile(join(__dirname, 'views', 'admin.html'));
 });
 
+app.use((req, res) => {
+  res.status(404).sendFile(join(__dirname, '..', 'public', '404.html'));
+});
+
 // Start Admin Server
 app.listen(PORT, () => {
   console.log(`=======================================================`);
   console.log(`🛡️  Celestial Good — ADMIN SERVER RUNNING`);
   console.log(`📍 URL: http://localhost:${PORT}`);
-  console.log(`🔑 Login: admin / admin`);
   console.log(`=======================================================`);
 });
