@@ -17,7 +17,9 @@ export const USE_SUPABASE_STORAGE = Boolean(SUPABASE_URL && SUPABASE_SERVICE_KEY
 const UPLOADS_DIR = process.env.UPLOADS_DIR
   ? resolve(process.env.UPLOADS_DIR)
   : join(__dirname, '..', '..', 'public', 'uploads');
-mkdirSync(UPLOADS_DIR, { recursive: true });
+// Serverless filesystems (e.g. Vercel) are read-only outside /tmp — tolerate a
+// failed mkdir here; the disk fallback in saveUpload reports errors per-request.
+try { mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
 export { UPLOADS_DIR };
 
 // Memory storage: files are buffered so we can forward them to Supabase Storage.
