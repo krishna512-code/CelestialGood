@@ -52,6 +52,23 @@ function requireAuth(req, res, next) {
   res.status(401).json({ error: 'Unauthorized. Please login.' });
 }
 
+// Diagnostic endpoint: reports driver + exact DB connectivity error details.
+app.get('/api/health', async (req, res) => {
+  try {
+    const rows = await query('SELECT 1 as ok');
+    res.json({ ok: true, driver: DB_DRIVER, db: rows[0] });
+  } catch (e) {
+    res.status(500).json({
+      ok: false,
+      driver: DB_DRIVER,
+      error: e.message,
+      code: e.code,
+      detail: e.detail,
+      hint: e.hint,
+    });
+  }
+});
+
 // ==========================================
 // AUTH
 // ==========================================
