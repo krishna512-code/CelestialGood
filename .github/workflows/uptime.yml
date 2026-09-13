@@ -1,0 +1,75 @@
+# Uptime monitor for celestialgood.com — free, runs on GitHub's cron.
+#
+# Alerts you in two ways:
+#   1. GitHub automatically emails you when a scheduled workflow fails
+#      (Settings → Notifications → Actions: "Send notifications for failed
+#      workflows" must be on — it is by default).
+#   2. OPTIONAL instant push alert: add a repository secret named
+#      UPTIME_WEBHOOK with a Discord/Slack-style webhook URL; failures POST
+#      there within a minute. Leave it unset and only #1 applies.
+#
+# Runs every 5 minutes on the default branch. A single transient blip is
+# retried before alerting, so you only hear about real outages.
+
+name: Uptime Monitor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe storefront + API (with one retry)
+        id: probe
+        run: |
+          check() {
+            local url="$1" name="$2" tries=0 code
+            while [ $tries -lt 2 ]; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$url")
+              if [ "$code" = "200" ]; then
+                echo "$name OK ($code)"
+                return 0
+              fi
+              tries=$((tries+1))
+              [ $tries -lt 2 ] && sleep 20
+            done
+            echo "$name FAILED (HTTP $code after retry)"
+            FAILED="$FAILED\n  - $name → HTTP $code ($url)"
+            return 1
+          }
+
+          FAILED=""
+          STATUS=0
+          check "https://www.celestialgood.com/" "Storefront"           || STATUS=1
+          check "https://www.celestialgood.com/api/health" "API health" || STATUS=1
+          check "https://www.celestialgood.com/admin" "Admin panel"     || STATUS=1
+
+          # The health endpoint must also confirm DB connectivity, not just 200.
+          BODY=$(curl -s --max-time 30 "https://www.celestialgood.com/api/health" || true)
+          echo "$BODY" | grep -q '"ok":true' || {
+            echo "Health body unhealthy: $BODY"
+            FAILED="$FAILED\n  - Database connectivity → bad health response"
+            STATUS=1
+          }
+
+          {
+            echo "failed<<EOF"
+            echo -e "$FAILED"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          exit $STATUS
+
+      - name: Send alert (optional webhook)
+        if: failure()
+        env:
+          WEBHOOK: ${{ secrets.UPTIME_WEBHOOK }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then
+            echo "No UPTIME_WEBHOOK secret set — GitHub's email notification is the only alert."
+            exit 0
+          fi
+          PAYLOAD=$(jq -n --arg text "🚨 celestialgood.com is DOWN${{ steps.probe.outputs.failed }}" '{content: $text}')
+          curl -s -X POST -H 'Content-Type: application/json' -d "$PAYLOAD" "$WEBHOOK" || true
