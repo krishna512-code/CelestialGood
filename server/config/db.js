@@ -1,4 +1,3 @@
-import { DatabaseSync } from 'node:sqlite';
 import { existsSync, mkdirSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -32,6 +31,9 @@ if (DB_DRIVER === 'postgres') {
   const d = dirname(dbPath);
   if (!existsSync(d)) mkdirSync(d, { recursive: true });
 
+  // Lazy import: keep node:sqlite out of the module graph in Postgres mode so
+  // hosts with older Node runtimes (e.g. Vercel's default) can still serve.
+  const { DatabaseSync } = await import('node:sqlite');
   sqlite = new DatabaseSync(dbPath);
   try {
     sqlite.exec('PRAGMA journal_mode = WAL;');
