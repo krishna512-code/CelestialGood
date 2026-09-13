@@ -14,8 +14,8 @@
     }
   ],
   "routes": [
-    { "src": "/shop", "dest": "/shop.html" },
-    { "src": "/admin", "dest": "/admin/index.html" },
+    { "src": "/shop", "dest": "/dist/shop.html" },
+    { "src": "/admin", "dest": "/dist/admin/index.html" },
     { "src": "/api/(.*)", "dest": "/api/[...path].js" },
     { "src": "/(.*\\.(?:js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|html))", "dest": "/dist/$1" },
     { "src": "/uploads/(.*)", "dest": "/dist/uploads/$1" },
