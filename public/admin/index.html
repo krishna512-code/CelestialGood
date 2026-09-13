@@ -124,6 +124,8 @@
         <label>Variants (JSON)</label><textarea id="prod-variants" placeholder='[{"weight":"500g","price":180,"mrp":220}]' style="height:60px"></textarea>
         <div class="flex-row"><label>Featured</label><input type="checkbox" id="prod-featured"></div>
         <label>Image</label><input type="file" id="prod-image" accept="image/*">
+        <label>Image URL (paste a direct link to an image)</label><input type="url" id="prod-image-url" placeholder="https://example.com/product-photo.jpg" oninput="updateImagePreview()">
+        <div id="prod-image-preview-wrap" class="hidden"><label>Preview</label><br><img id="prod-image-preview" class="image-preview" alt="Product image preview"></div>
         <div class="flex-row"><button class="admin-btn" id="prod-save-btn" onclick="addProduct()">Add Product</button><button class="admin-btn admin-btn-danger hidden" id="prod-cancel-btn" onclick="cancelProductEdit()">Cancel Edit</button></div>
       </div>
       <table class="admin-table"><thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Actions</th></tr></thead><tbody id="productsTable"></tbody></table>
@@ -255,6 +257,17 @@
     function renderTestimonials(tests) { document.getElementById('testimonialsTable').innerHTML = tests.map(t => `<tr><td>${t.name}</td><td>${t.location}</td><td><button class="admin-btn admin-btn-danger" onclick="deleteTestimonial(${t.id})">Delete</button></td></tr>`).join(''); }
     function renderFAQ(faqs) { document.getElementById('faqTable').innerHTML = faqs.map(f => `<tr><td>${f.question}</td><td><button class="admin-btn admin-btn-danger" onclick="deleteFAQ(${f.id})">Delete</button></td></tr>`).join(''); }
     
+    function updateImagePreview() {
+      const wrap = document.getElementById('prod-image-preview-wrap');
+      const previewImg = document.getElementById('prod-image-preview');
+      const url = document.getElementById('prod-image-url').value.trim();
+      if (!url) { wrap.classList.add('hidden'); previewImg.removeAttribute('src'); return; }
+      previewImg.src = url;
+      wrap.classList.remove('hidden');
+      previewImg.onerror = function() { previewImg.style.border = '2px solid #c0392b'; };
+      previewImg.onload = function() { previewImg.style.border = ''; };
+    }
+    
     async function saveSettings() {
       const data = {};
       ['hero_title','hero_subtitle','hero_description','announcement_text','whatsapp_number','email','footer_description','copyright_text'].forEach(k => data[k] = document.getElementById('set-'+k).value);
@@ -276,6 +289,8 @@
       formData.append('category_id', document.getElementById('prod-category').value);
       const img = document.getElementById('prod-image').files[0];
       if (img) formData.append('image', img);
+      const imageUrl = document.getElementById('prod-image-url').value.trim();
+      if (imageUrl) formData.append('image_url', imageUrl);
       if (editingProductId) {
         await api(`/api/products/${editingProductId}`, { method: 'PUT', body: formData }, 'Product updated!');
         cancelProductEdit();
@@ -300,6 +315,8 @@
       document.getElementById('prod-variants').value = typeof p.variants === 'string' ? p.variants : JSON.stringify(p.variants || []);
       document.getElementById('prod-category').value = p.category_id || '';
       document.getElementById('prod-image').value = '';
+      document.getElementById('prod-image-url').value = p.image_url && !p.image_url.startsWith('/uploads/') ? p.image_url : '';
+      updateImagePreview();
       document.getElementById('prod-save-btn').textContent = 'Update Product';
       document.getElementById('prod-cancel-btn').classList.remove('hidden');
       document.getElementById('tab-products').scrollIntoView({ behavior: 'smooth' });
@@ -311,6 +328,8 @@
       document.getElementById('prod-featured').checked = false;
       document.getElementById('prod-category').value = '';
       document.getElementById('prod-image').value = '';
+      document.getElementById('prod-image-url').value = '';
+      updateImagePreview();
       document.getElementById('prod-save-btn').textContent = 'Add Product';
       document.getElementById('prod-cancel-btn').classList.add('hidden');
     }
