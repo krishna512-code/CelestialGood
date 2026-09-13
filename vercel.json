@@ -9,20 +9,6 @@
       "statusCode": 200
     }
   ],
-  "rewrites": {
-    "afterFiles": [
-      {
-        "source": "/admin",
-        "destination": "/admin/index.html"
-      }
-    ],
-    "fallback": [
-      {
-        "source": "/(.*)",
-        "destination": "/404.html"
-      }
-    ]
-  },
   "headers": [
     {
       "source": "/(.*)",
