@@ -1,55 +1,49 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
-  "framework": null,
-  "outputDirectory": "dist",
-  "redirects": [
+  "builds": [
     {
-      "source": "/shop",
-      "destination": "/shop.html",
-      "statusCode": 200
+      "src": "api/[...path].js",
+      "use": "@vercel/node",
+      "config": { "includeFiles": "server/**" }
+    },
+    {
+      "src": "dist/**",
+      "use": "@vercel/static"
     }
+  ],
+  "routes": [
+    { "src": "/shop", "dest": "/shop.html" },
+    { "src": "/admin", "dest": "/admin/index.html" },
+    { "src": "/api/(.*)", "dest": "/api/[...path].js" },
+    { "src": "/(.*\\.(?:js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|html))", "dest": "/dist/$1" },
+    { "src": "/uploads/(.*)", "dest": "/dist/uploads/$1" },
+    { "src": "/assets/(.*)", "dest": "/dist/assets/$1" },
+    { "src": "/(.*)", "dest": "/dist/$1" },
+    { "src": "/(.*)", "dest": "/dist/404.html" }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, stale-while-revalidate=86400"
-        }
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=86400" }
       ]
     },
     {
       "source": "/assets/(.*)",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
       "source": "/api/(.*)",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store"
-        }
+        { "key": "Cache-Control", "value": "no-store" }
       ]
     }
-  ],
-  "regions": ["iad1"]
+  ]
 }
