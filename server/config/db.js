@@ -1,10 +1,15 @@
 import { DatabaseSync } from 'node:sqlite';
 import { existsSync, mkdirSync } from 'fs';
-import { dirname, join } from 'path';
+import { dirname, join, resolve } from 'path';
+import { hashPassword } from '../middleware/auth.js';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dbPath = join(__dirname, '..', 'celestial-goods.db');
+// SQLITE_PATH lets hosts like Railway point the DB at a persistent volume;
+// defaults to the bundled dev DB for local use.
+const dbPath = process.env.SQLITE_PATH
+  ? resolve(process.env.SQLITE_PATH)
+  : join(__dirname, '..', 'celestial-goods.db');
 
 function ensureDir(path) {
   const d = dirname(path);
@@ -154,9 +159,13 @@ export function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
+      role TEXT DEFAULT 'admin',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+    // Migration for DBs created before the role column existed
+    try { db.exec("ALTER TABLE admin_users ADD COLUMN role TEXT DEFAULT 'admin'"); } catch (e) {}
 
     // Default Admin User: admin / admin
     // bcrypt hash for 'admin'

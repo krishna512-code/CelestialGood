@@ -16,8 +16,7 @@ npm-debug.log*
 # OS files
 .DS_Store
 
-# Build outputs (dist/ is needed for Vercel deployment)
-# Only static assets, no JS bundles with secrets
+# Uploads (user content lives on the Railway volume in production)
 public/uploads/
 
 # Database files - NEVER commit database files with user data
@@ -30,10 +29,6 @@ server/data/
 .idea/
 .vscode/
 .htaccess
-
-# Test
-tests/
-*.test.js
 
 # Secret files
 *.key
@@ -54,3 +49,6 @@ out/
 
 # Client-side embedded secrets
 *celestial_admin_secret_key*
+
+# Freebuff local state
+.freebuff/

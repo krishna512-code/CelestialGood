@@ -1,39 +1,37 @@
 {
   "name": "celestial-goods",
-  "version": "1.0.0",
-  "description": "Organic & Artisanal Delicacies E-Commerce Platform",
+  "version": "2.0.0",
+  "description": "E-commerce site for Celestial Goods - organic artisanal delicacies",
   "type": "module",
   "main": "server/index.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "scripts": {
     "start": "node server/index.js",
     "start:storefront": "node server/index.js",
     "start:admin": "node server/adminServer.js",
     "start:all": "concurrently \"npm run start:storefront\" \"npm run start:admin\"",
     "dev": "concurrently \"node server/index.js\" \"node server/adminServer.js\"",
-    "test": "node --test tests/",
-    "lint": "eslint server/",
-    "build": "echo \"No build step required - static frontend served by Express\""
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {},
+    "testTimeout": 15000
   },
   "dependencies": {
-    "express": "^4.21.0",
-    "cors": "^2.8.5",
-    "multer": "^1.4.5-lts.1",
+    "@supabase/supabase-js": "^2.39.0",
     "bcryptjs": "^2.4.3",
-    "node:sqlite": "^3.0.0"
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.11.5"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "eslint": "^9.0.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "performanceBudget": {
-    "maxAssetSize": 200000,
-    "maxEntrypointSize": 300000,
-    "maxTotalSize": 500000,
-    "maxImageSize": 100000,
-    "maxJavaScriptSize": 150000,
-    "maxCssSize": 50000
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
   }
 }

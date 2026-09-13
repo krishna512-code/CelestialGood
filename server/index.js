@@ -1,14 +1,23 @@
 import express from 'express';
-import { dirname, join } from 'path';
+import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { mkdirSync } from 'fs';
 import { db, initDatabase } from './config/db.js';
-import { hashPassword, verifyPassword } from './middleware/auth.js';
+import { supabase } from './config/supabase.js';
 import cors from 'cors';
 import multer from 'multer';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 5050;
+// "0" (or empty) PORT strings are truthy but not a usable port — fall back.
+const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 5050;
+
+// UPLOADS_DIR: point at a persistent volume in production (e.g. /data/uploads).
+const UPLOADS_DIR = process.env.UPLOADS_DIR
+  ? resolve(process.env.UPLOADS_DIR)
+  : join(__dirname, '..', 'public', 'uploads');
+mkdirSync(UPLOADS_DIR, { recursive: true });
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 initDatabase();
 
@@ -26,7 +35,8 @@ app.use((req, res, next) => {
     try {
       const match = cookie.match(/session=([^;]+)/);
       if (match) {
-        const data = JSON.parse(Buffer.from(match[1], 'base64').toString());
+        // res.cookie percent-encodes base64 padding — decode before parsing
+        const data = JSON.parse(Buffer.from(decodeURIComponent(match[1]), 'base64').toString());
         if (data && data.expiry > Date.now()) {
           req.session = data;
         }
@@ -37,23 +47,22 @@ app.use((req, res, next) => {
 });
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, join(__dirname, '..', 'public', 'uploads')),
+  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
   filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 const upload = multer({ storage });
 
 // Auth
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', async (req, res) => {
   const { username, password } = req.body;
-  const user = db.prepare('SELECT * FROM admin_users WHERE username = ?').get(username);
-  if (user && verifyPassword(password, user.password_hash)) {
-    const sessionData = { userId: user.id, username: user.username, expiry: Date.now() + 86400000 };
-    const encoded = Buffer.from(JSON.stringify(sessionData)).toString('base64');
-    res.cookie('session', encoded, { httpOnly: true, maxAge: 86400000 });
-    res.json({ success: true, user: { username: user.username } });
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' });
+  const { data, error } = await supabase.auth.signInWithPassword({ email: username, password });
+  if (error || !data.session) {
+    return res.status(401).json({ error: 'Invalid credentials' });
   }
+  const token = data.session.access_token;
+  const encoded = Buffer.from(token).toString('base64');
+  res.cookie('session', encoded, { httpOnly: true, maxAge: 86400000 });
+  res.json({ success: true, user: { email: data.user.email } });
 });
 
 app.post('/api/admin/logout', (req, res) => {
@@ -61,12 +70,15 @@ app.post('/api/admin/logout', (req, res) => {
   res.json({ success: true });
 });
 
-app.get('/api/admin/me', (req, res) => {
-  if (req.session && req.session.userId) {
-    res.json({ loggedIn: true, user: { username: req.session.username } });
-  } else {
-    res.status(401).json({ loggedIn: false });
-  }
+app.get('/api/admin/me', async (req, res) => {
+  const cookie = req.headers.cookie;
+  if (!cookie) return res.status(401).json({ loggedIn: false });
+  const match = cookie.match(/session=([^;]+)/);
+  if (!match) return res.status(401).json({ loggedIn: false });
+  const token = Buffer.from(match[1], 'base64').toString();
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user) return res.status(401).json({ loggedIn: false });
+  res.json({ loggedIn: true, user: { email: data.user.email } });
 });
 
 // Site Settings
@@ -258,8 +270,6 @@ app.get('/shop', (req, res) => { res.sendFile(join(__dirname, '..', 'public', 's
 app.use((req, res) => {
   res.status(404).sendFile(join(__dirname, '..', 'public', '404.html'));
 });
-
-const PORT = process.env.PORT || 5050;
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {

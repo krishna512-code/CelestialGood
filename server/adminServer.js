@@ -1,11 +1,12 @@
 import express from 'express';
-import { dirname, join } from 'path';
+import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import cors from 'cors';
 import multer from 'multer';
 import { existsSync, mkdirSync } from 'fs';
 import { db, initDatabase } from './config/db.js';
 import { hashPassword, verifyPassword } from './middleware/auth.js';
+import { supabase } from './config/supabase.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -14,7 +15,27 @@ const PORT = process.env.ADMIN_PORT || 5051;
 // Initialize DB schema
 initDatabase();
 
-// Ensure uploads folder exists
+// Ensure a default admin user exists in Supabase for development
+(async () => {
+  const adminEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@example.com';
+  const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin';
+  try {
+    // Try signing in – if succeeds, user already exists
+    const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({ email: adminEmail, password: adminPassword });
+    if (!loginErr && loginData?.session) return; // admin exists
+  } catch {}
+  // If sign‑in failed, attempt to sign up the admin user
+  const { error: signupErr } = await supabase.auth.signUp({ email: adminEmail, password: adminPassword });
+  if (signupErr) console.error('Failed to create default admin user:', signupErr.message);
+})();
+
+// Ensure a default local admin user exists for fallback auth
+  const localAdmin = db.prepare('SELECT * FROM admin_users WHERE username = ?').get('admin');
+  if (!localAdmin) {
+    const adminHash = hashPassword('admin');
+    db.prepare('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)').run('admin', adminHash);
+    console.log('Created default local admin user (admin / admin)');
+  }
 const uploadsDir = join(__dirname, '..', 'public', 'uploads');
 if (!existsSync(uploadsDir)) {
   mkdirSync(uploadsDir, { recursive: true });
@@ -48,9 +69,10 @@ app.use((req, res, next) => {
   const cookie = req.headers.cookie;
   if (cookie) {
     try {
-      const match = cookie.match(/admin_session=([^;]+)/);
+      const match = cookie.match(/session=([^;]+)/);
       if (match) {
-        const decoded = Buffer.from(match[1], 'base64').toString();
+        // res.cookie percent-encodes base64 padding — decode before parsing
+        const decoded = Buffer.from(decodeURIComponent(match[1]), 'base64').toString();
         const data = JSON.parse(decoded);
         if (data && data.expiry > Date.now()) {
           req.session = data;
@@ -79,37 +101,51 @@ function requireAuth(req, res, next) {
 // ==========================================
 // AUTH ROUTES
 // ==========================================
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password required.' });
+  // First try Supabase auth
+  const { data, error } = await supabase.auth.signInWithPassword({ email: username, password });
+  if (!error && data?.session) {
+    const token = data.session.access_token;
+    const encoded = Buffer.from(token).toString('base64');
+    res.cookie('session', encoded, { httpOnly: true, maxAge: 86400000 });
+    return res.json({ success: true, user: { email: data.user.email } });
   }
-
-  const user = db.prepare('SELECT * FROM admin_users WHERE username = ?').get(username);
-  if (user && verifyPassword(password, user.password_hash)) {
-    const sessionData = {
-      userId: user.id,
-      username: user.username,
-      expiry: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days
-    };
-    const encoded = Buffer.from(JSON.stringify(sessionData)).toString('base64');
-    res.setHeader('Set-Cookie', `admin_session=${encoded}; Path=/; HttpOnly; Max-Age=${7 * 24 * 60 * 60}; SameSite=Lax`);
-    return res.json({ success: true, user: { username: user.username } });
+  // Fallback: check local admin_users table
+  const admin = db.prepare('SELECT * FROM admin_users WHERE username = ?').get(username);
+  if (admin && verifyPassword(password, admin.password_hash)) {
+    // Create a simple session token (not a JWT) for local admin
+    const sessionObj = { userId: admin.id, expiry: Date.now() + 86400000 };
+    const encoded = Buffer.from(JSON.stringify(sessionObj)).toString('base64');
+    res.cookie('session', encoded, { httpOnly: true, maxAge: 86400000 });
+    return res.json({ success: true, user: { email: admin.username } });
   }
-
-  return res.status(401).json({ error: 'Invalid username or password.' });
+  return res.status(401).json({ error: 'Invalid credentials' });
 });
 
 app.post('/api/admin/logout', (req, res) => {
-  res.setHeader('Set-Cookie', 'admin_session=; Path=/; HttpOnly; Max-Age=0');
+  res.clearCookie('session');
+  res.json({ success: true });
+});
+// Forgot password route
+app.post('/api/admin/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) {
+    return res.status(400).json({ error: error.message });
+  }
   res.json({ success: true });
 });
 
-app.get('/api/admin/me', (req, res) => {
-  if (req.session && req.session.userId) {
-    return res.json({ loggedIn: true, user: { username: req.session.username } });
-  }
-  res.status(401).json({ loggedIn: false });
+app.get('/api/admin/me', async (req, res) => {
+  const cookie = req.headers.cookie;
+  if (!cookie) return res.status(401).json({ loggedIn: false });
+  const match = cookie.match(/session=([^;]+)/);
+  if (!match) return res.status(401).json({ loggedIn: false });
+  const token = Buffer.from(decodeURIComponent(match[1]), 'base64').toString();
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user) return res.status(401).json({ loggedIn: false });
+  res.json({ loggedIn: true, user: { email: data.user.email } });
 });
 
 app.post('/api/admin/change-password', requireAuth, (req, res) => {
@@ -754,14 +790,20 @@ app.get(['/', '/admin', '/admin/*'], (req, res) => {
   res.sendFile(join(__dirname, 'views', 'admin.html'));
 });
 
+// 404 fallback for unmatched routes
 app.use((req, res) => {
-  res.status(404).sendFile(join(__dirname, '..', 'public', '404.html'));
+  res.status(404).sendFile(join(__dirname, 'views', '404.html'));
 });
 
-// Start Admin Server
-app.listen(PORT, () => {
-  console.log(`=======================================================`);
-  console.log(`🛡️  Celestial Good — ADMIN SERVER RUNNING`);
-  console.log(`📍 URL: http://localhost:${PORT}`);
-  console.log(`=======================================================`);
-});
+// Export the app for testing; only auto-start when run directly.
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  app.listen(PORT, () => {
+    console.log(`=======================================================`);
+    console.log(`🛡️  Celestial Good — ADMIN SERVER RUNNING`);
+    console.log(`📍 URL: http://localhost:${PORT}`);
+    console.log(`🔑 Login: admin / admin`);
+    console.log(`=======================================================`);
+  });
+}
+
+export default app;
