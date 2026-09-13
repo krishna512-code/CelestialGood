@@ -31,6 +31,11 @@ Get two things from your Supabase dashboard:
 
 Add both to `.env` locally (never commit), then run:
 
+> **Env naming:** the code accepts both schemes — the Supabase dashboard's
+> current names (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`)
+> and the classic ones (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
+> `SUPABASE_SERVICE_KEY`). Use either, just be consistent in Vercel.
+
 ```bash
 npm run migrate:pg
 ```
@@ -45,12 +50,15 @@ Import the repo in Vercel (or use the existing project). Framework preset:
 **Other**. Then set **Environment Variables** (Production + Preview):
 
 ```
+SUPABASE_URL                      = https://<ref>.supabase.co
+SUPABASE_PUBLISHABLE_KEY          = (publishable key)
+SUPABASE_SECRET_KEY               = (secret/service key — enables image uploads)
 DATABASE_URL                      = (the pooler URI from step 1)
-NEXT_PUBLIC_SUPABASE_URL          = (already in your .env)
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = (already in your .env)
-SUPABASE_SERVICE_KEY              = (service_role secret — enables image uploads)
 OWNER_USERNAME / OWNER_PASSWORD   = (optional local-admin bootstrap)
 ```
+
+(The classic names `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
+`SUPABASE_SERVICE_KEY` also work.)
 
 No build command needed; `vercel.json` wires everything:
 

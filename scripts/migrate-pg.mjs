@@ -283,9 +283,11 @@ async function main() {
     await pool.end();
   }
 
-  // Storage bucket (needs the service key)
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
-    const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
+  // Storage bucket (needs the service/secret key)
+  const sbUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const sbSecret = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY;
+  if (sbUrl && sbSecret) {
+    const sb = createClient(sbUrl, sbSecret, { auth: { persistSession: false } });
     const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'product-images';
     const { data: existing } = await sb.storage.getBucket(bucket);
     if (!existing) {
@@ -296,7 +298,7 @@ async function main() {
       console.log(`  storage bucket "${bucket}" already exists`);
     }
   } else {
-    console.warn('! SUPABASE_SERVICE_KEY not set — storage bucket NOT created. Uploads will fail in Postgres mode until it exists.');
+    console.warn('! SUPABASE_SECRET_KEY not set — storage bucket NOT created. Uploads will fail in Postgres mode until it exists.');
   }
 
   console.log('\nDone. Your Supabase project is ready for production.');
