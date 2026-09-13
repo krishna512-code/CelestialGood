@@ -155,6 +155,19 @@
 
   <script>
     let allData = {};
+
+    // Shared API helper: shows the server's error instead of a fake success toast
+    async function api(url, options, okMsg) {
+      const r = await fetch(url, options);
+      if (!r.ok) {
+        let msg = 'Save failed (' + r.status + ')';
+        try { const j = await r.json(); if (j.error) msg = j.error; } catch (e) {}
+        showToast('⚠️ ' + msg);
+        throw new Error(msg);
+      }
+      if (okMsg) showToast(okMsg);
+      return r;
+    }
     
     // Check session
     fetch('/api/admin/me').then(r => r.json()).then(d => {
@@ -231,8 +244,7 @@
     async function saveSettings() {
       const data = {};
       ['hero_title','hero_subtitle','hero_description','announcement_text','whatsapp_number','email','footer_description','copyright_text'].forEach(k => data[k] = document.getElementById('set-'+k).value);
-      await fetch('/api/settings', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
-      showToast('Settings saved!');
+      await api('/api/settings', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }, 'Settings saved!');
     }
     
     async function addCategory() {
@@ -240,8 +252,8 @@
       const slug = document.getElementById('cat-slug').value;
       const icon = document.getElementById('cat-icon').value;
       const desc = document.getElementById('cat-desc').value;
-      await fetch('/api/categories', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, slug, icon, description: desc}) });
-      loadAllData(); showToast('Category added!');
+      await api('/api/categories', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, slug, icon, description: desc}) }, 'Category added!');
+      loadAllData();
     }
     
     async function addProduct() {
@@ -250,8 +262,8 @@
       formData.append('category_id', document.getElementById('prod-category').value);
       const img = document.getElementById('prod-image').files[0];
       if (img) formData.append('image', img);
-      await fetch('/api/products', { method: 'POST', body: formData });
-      loadAllData(); showToast('Product added!');
+      await api('/api/products', { method: 'POST', body: formData }, 'Product added!');
+      loadAllData();
     }
     
     async function addBanner() {
@@ -260,27 +272,27 @@
       const img = document.getElementById('ban-image').files[0];
       if (img) formData.append('image', img);
       formData.append('sort_order', '0');
-      await fetch('/api/banners', { method: 'POST', body: formData });
-      loadAllData(); showToast('Banner added!');
+      await api('/api/banners', { method: 'POST', body: formData }, 'Banner added!');
+      loadAllData();
     }
     
     async function addTestimonial() {
       const data = { name: document.getElementById('test-name').value, location: document.getElementById('test-location').value, text: document.getElementById('test-text').value };
-      await fetch('/api/testimonials', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
-      loadAllData(); showToast('Testimonial added!');
+      await api('/api/testimonials', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }, 'Testimonial added!');
+      loadAllData();
     }
     
     async function addFAQ() {
       const data = { question: document.getElementById('faq-question').value, answer: document.getElementById('faq-answer').value };
-      await fetch('/api/faq', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
-      loadAllData(); showToast('FAQ added!');
+      await api('/api/faq', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }, 'FAQ added!');
+      loadAllData();
     }
     
-    async function deleteCategory(id) { await fetch(`/api/categories/${id}`, {method:'DELETE'}); loadAllData(); }
-    async function deleteProduct(id) { await fetch(`/api/products/${id}`, {method:'DELETE'}); loadAllData(); }
-    async function deleteBanner(id) { await fetch(`/api/banners/${id}`, {method:'DELETE'}); loadAllData(); }
-    async function deleteTestimonial(id) { await fetch(`/api/testimonials/${id}`, {method:'DELETE'}); loadAllData(); }
-    async function deleteFAQ(id) { await fetch(`/api/faq/${id}`, {method:'DELETE'}); loadAllData(); }
+    async function deleteCategory(id) { await api(`/api/categories/${id}`, {method:'DELETE'}, 'Deleted'); loadAllData(); }
+    async function deleteProduct(id) { await api(`/api/products/${id}`, {method:'DELETE'}, 'Deleted'); loadAllData(); }
+    async function deleteBanner(id) { await api(`/api/banners/${id}`, {method:'DELETE'}, 'Deleted'); loadAllData(); }
+    async function deleteTestimonial(id) { await api(`/api/testimonials/${id}`, {method:'DELETE'}, 'Deleted'); loadAllData(); }
+    async function deleteFAQ(id) { await api(`/api/faq/${id}`, {method:'DELETE'}, 'Deleted'); loadAllData(); }
     
     function showToast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
   </script>

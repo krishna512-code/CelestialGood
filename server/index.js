@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const IS_PROD = process.env.NODE_ENV === 'production';
 const app = express();
 // "0" (or empty) PORT strings are truthy but not a usable port — fall back.
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 5050;
@@ -58,14 +59,12 @@ app.get('/api/health', async (req, res) => {
     const rows = await query('SELECT 1 as ok');
     res.json({ ok: true, driver: DB_DRIVER, db: rows[0] });
   } catch (e) {
-    res.status(500).json({
-      ok: false,
-      driver: DB_DRIVER,
-      error: e.message,
-      code: e.code,
-      detail: e.detail,
-      hint: e.hint,
-    });
+    // Detailed diagnostics only outside production; prod returns a minimal body
+    res.status(500).json(
+      IS_PROD
+        ? { ok: false, driver: DB_DRIVER, code: e.code }
+        : { ok: false, driver: DB_DRIVER, error: e.message, code: e.code, detail: e.detail, hint: e.hint }
+    );
   }
 });
 
@@ -80,7 +79,7 @@ app.post('/api/admin/login', async (req, res) => {
     if (!error && data?.session) {
       const token = data.session.access_token;
       const encoded = Buffer.from(token).toString('base64');
-      res.cookie('session', encoded, { httpOnly: true, maxAge: 86400000 });
+      res.cookie('session', encoded, { httpOnly: true, maxAge: 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
       return res.json({ success: true, user: { email: data.user.email } });
     }
   } catch {}
@@ -89,7 +88,7 @@ app.post('/api/admin/login', async (req, res) => {
   if (admin && verifyPassword(password, admin.password_hash)) {
     const sessionObj = { userId: admin.id, expiry: Date.now() + 86400000 };
     const encoded = Buffer.from(JSON.stringify(sessionObj)).toString('base64');
-    res.cookie('session', encoded, { httpOnly: true, maxAge: 86400000 });
+    res.cookie('session', encoded, { httpOnly: true, maxAge: 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
     return res.json({ success: true, user: { email: admin.username } });
   }
   return res.status(401).json({ error: 'Invalid credentials' });
