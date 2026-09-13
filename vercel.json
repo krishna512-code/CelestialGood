@@ -2,6 +2,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "framework": null,
+  "outputDirectory": "dist",
   "redirects": [
     {
       "source": "/shop",
