@@ -1,6 +1,6 @@
 {
   "name": "celestial-goods",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "E-commerce site for Celestial Goods - organic artisanal delicacies",
   "type": "module",
   "main": "server/index.js",
@@ -9,11 +9,9 @@
   },
   "scripts": {
     "start": "node server/index.js",
-    "start:storefront": "node server/index.js",
-    "start:admin": "node server/adminServer.js",
-    "start:all": "concurrently \"npm run start:storefront\" \"npm run start:admin\"",
-    "dev": "concurrently \"node server/index.js\" \"node server/adminServer.js\"",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
+    "dev": "node server/index.js",
+    "migrate:pg": "node scripts/migrate-pg.mjs",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand"
   },
   "jest": {
     "testEnvironment": "node",
@@ -30,7 +28,6 @@
     "pg": "^8.11.5"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
     "jest": "^29.7.0",
     "supertest": "^6.3.3"
   }

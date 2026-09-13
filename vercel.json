@@ -11,20 +11,8 @@
   ],
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://celestial-good-api.up.railway.app/api/:path*"
-    },
-    {
-      "source": "/uploads/:path*",
-      "destination": "https://celestial-good-api.up.railway.app/uploads/:path*"
-    },
-    {
-      "source": "/admin/:path*",
-      "destination": "https://celestial-good-api.up.railway.app/admin/:path*"
-    },
-    {
       "source": "/admin",
-      "destination": "https://celestial-good-api.up.railway.app/admin"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/(.*)",

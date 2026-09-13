@@ -1,73 +1,101 @@
-# Production Deployment Guide — Hybrid Setup
+# Production Deployment — Vercel + Supabase (₹0/month, no Railway)
 
-**Architecture:** Vercel serves the static site (fast CDN, security headers) and proxies
-`/api`, `/uploads`, `/admin` to an Express API on Railway (persistent SQLite volume).
+**Architecture:** Vercel serves the static site from `dist/` and runs the Express
+backend as serverless Functions (`api/index.js`). Data lives in Supabase Postgres
+(free 500 MB), product images in Supabase Storage (free 1 GB). No second server,
+no volume, nothing sleeping.
 
 ```
 Browser → celestialgood.com (Vercel)
-              ├──  /, /shop, /assets/*        → static files from dist/
-              └──  /api/*, /uploads/*, /admin → Railway (Express + SQLite)
+             ├──  /, /shop, /assets/*      → static files (CDN)
+             ├──  /api/*                   → Vercel Function (Express app)
+             │        └── Postgres (Supabase) + Storage (Supabase)
+             └──  /admin, /admin/*         → static admin page
+                   (its fetch calls hit /api/* on the same origin)
 ```
 
-## 1. Deploy the API to Railway
+Local development and `npm test` keep using SQLite automatically — no
+`DATABASE_URL` needed. The dual-driver in `server/config/db.js` picks Postgres
+the moment `DATABASE_URL` is set (that's what Vercel will have).
 
-1. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo** → select `krishna512-code/CelestialGood`.
-2. Railway auto-detects `railway.json` (nixpacks builder, `npm start`).
-3. Add a **volume**: Service → **Variables/Settings → Volumes** → mount at `/data`.
-4. Set these **Variables**:
+---
 
-   | Variable | Value |
-   |---|---|
-   | `NEXT_PUBLIC_SUPABASE_URL` | (copy from your local `.env`) |
-   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | (copy from your local `.env`) |
-   | `SQLITE_PATH` | `/data/celestial-goods.db` |
-   | `UPLOADS_DIR` | `/data/uploads` |
-   | `OWNER_USERNAME` / `OWNER_PASSWORD` | optional strong admin bootstrap |
+## 1. Create the Supabase schema + seed (one-time)
 
-5. Under **Settings → Networking → Generate Domain**: create the public domain.
-   You'll get something like `celestial-good-api.up.railway.app`.
-6. **Important:** put that URL into `vercel.json` (replace all 4 occurrences of
-   `https://celestial-good-api.up.railway.app`), commit, and push so Vercel proxies to it.
+Get two things from your Supabase dashboard:
 
-## 2. Vercel (static frontend)
+| What | Where |
+|---|---|
+| `DATABASE_URL` | Project Settings → Database → Connection string → **URI**, choose the **Pooler** string (port `6543`); it looks like `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres` |
+| `SUPABASE_SERVICE_KEY` | Project Settings → API → `service_role` **secret** |
 
-- If not connected yet: [vercel.com](https://vercel.com) → **Add New Project** → import `krishna512-code/CelestialGood`.
-- Framework: **Other** (static). Output directory: `dist`. No build command.
-- Every push to `main` redeploys automatically.
-
-## 3. Point the domain (GoDaddy)
-
-In GoDaddy → **My Products → Domain → DNS → Manage Zones**:
-
-1. **Delete** any existing Forwarding (it's currently parking the apex!).
-2. Delete the old apex `A` records pointing at GoDaddy (`3.33.130.190`, `15.197.148.33`).
-3. Add:
-   - `A` record — name `@` — value `76.76.21.21` — TTL 600
-   - `CNAME` — name `www` — value `cname.vercel-dns.com` — TTL 600
-4. In Vercel → Project → **Settings → Domains**: add both `celestialgood.com` and
-   `www.celestialgood.com`; set `www` as primary and apex → redirect to `www`.
-
-DNS propagation: usually minutes, up to 48h worst case. Check with
-`dig +short celestialgood.com` — it should return `76.76.21.21`.
-
-## 4. Verify
+Add both to `.env` locally (never commit), then run:
 
 ```bash
-curl -s https://www.celestialgood.com/api/products | head -c 200   # JSON products
-curl -sI https://www.celestialgood.com/assets/celestial-good-logo.png  # 200 image/png
-curl -sI https://www.celestialgood.com/admin                        # 200
+npm run migrate:pg
 ```
 
-Then browse https://celestialgood.com — hero, logo, products, and the admin
-dashboard at `/admin` should all work.
+It creates the 12 tables, indexes, RLS lockdown (service_role-only), seeds the
+same catalog as the SQLite DB (categories, 8 products, billboards, testimonials,
+FAQ, sample orders), and creates the public `product-images` storage bucket.
 
-## Local development
+## 2. Vercel project settings
+
+Import the repo in Vercel (or use the existing project). Framework preset:
+**Other**. Then set **Environment Variables** (Production + Preview):
+
+```
+DATABASE_URL                      = (the pooler URI from step 1)
+NEXT_PUBLIC_SUPABASE_URL          = (already in your .env)
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = (already in your .env)
+SUPABASE_SERVICE_KEY              = (service_role secret — enables image uploads)
+OWNER_USERNAME / OWNER_PASSWORD   = (optional local-admin bootstrap)
+```
+
+No build command needed; `vercel.json` wires everything:
+
+- `/api/*` → the serverless function (`api/index.js`)
+- `/admin` → static `admin/index.html` (rewrite already configured)
+- `/shop` → rewrite to `/shop.html`
+- unknown paths → `/404.html`
+- security headers + long-lived asset caching (kept from the earlier hardening)
+
+## 3. DNS at GoDaddy (fixes the hijacked apex)
+
+`celestialgood.com` currently points at GoDaddy forwarding/parking IPs. In
+GoDaddy → DNS records:
+
+1. **Delete** any "Forwarding" / "Parking" entries for the apex.
+2. `A` record: `@` → `76.76.21.21`
+3. `CNAME`: `www` → `cname.vercel-dns.com` (already correct)
+
+Then add both `celestialgood.com` and `www.celestialgood.com` as domains in the
+Vercel project. TLS is automatic.
+
+## 4. Verify the deployment
 
 ```bash
-npm install
-npm run start:all   # storefront+API :5050, admin server :5051
-npm test            # 4 auth tests
+curl -s https://celestialgood.com/api/products | head -c 300      # JSON, 8 products
+curl -s -o /dev/null -w '%{http_code}' https://celestialgood.com/admin   # 200
 ```
 
-Note: your shell exports `PORT=0`; the server now falls back to 5050 when `PORT`
-is `0`/empty, so no local workaround is needed anymore.
+Log in at `https://celestialgood.com/admin`, edit a product, and confirm the
+image lands in Supabase Storage (`product-images` bucket).
+
+---
+
+## Notes & gotchas
+
+- **Admin login:** primary path is Supabase Auth (email + password users). The
+  `admin_users` table is a local fallback — bootstrap it via `OWNER_USERNAME` /
+  `OWNER_PASSWORD` before `npm run migrate:pg`, or insert a row manually
+  (hash with bcrypt).
+- **Password reset email** (`/api/admin/forgot-password`): works once you add
+  SMTP/custom domain settings in Supabase Auth; by default Supabase rate-limits
+  to its built-in email service.
+- **Free-tier limits:** Supabase pauses projects after 1 week of inactivity on
+  the free plan — real traffic prevents that. Vercel Hobby is technically
+  non-commercial per ToS; fine to launch on, move to Pro ($20/mo) or an
+  always-free VM (e.g. Oracle) if the store becomes a registered business.
+- **SQLite mode** remains the default locally: `npm start`, `npm test`, and the
+  preview all work with zero cloud dependencies.

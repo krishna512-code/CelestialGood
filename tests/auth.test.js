@@ -1,25 +1,21 @@
-// tests/auth.test.js
+// tests/auth.test.js — runs against the unified app in SQLite mode (no DATABASE_URL).
 import request from 'supertest';
-import app from '../server/adminServer.js';
-import { db } from '../server/config/db.js';
+import app from '../server/index.js';
+import { run } from '../server/config/db.js';
 import { hashPassword } from '../server/middleware/auth.js';
 
 const ADMIN_USER = { username: 'testadmin', password: 'Password123!' };
 
-beforeAll(() => {
-  // Clean any existing test admin
-  db.prepare('DELETE FROM admin_users WHERE username = ?').run(ADMIN_USER.username);
-  const hash = hashPassword(ADMIN_USER.password);
-  db.prepare('INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)')
-    .run(ADMIN_USER.username, hash, 'owner');
-});
-
-afterAll(() => {
-  // Remove test admin
-  db.prepare('DELETE FROM admin_users WHERE username = ?').run(ADMIN_USER.username);
+beforeAll(async () => {
+  await run('DELETE FROM admin_users WHERE username = ?', [ADMIN_USER.username]);
+  await run(
+    'INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)',
+    [ADMIN_USER.username, hashPassword(ADMIN_USER.password), 'owner']
+  );
 });
 
 afterAll(async () => {
+  await run('DELETE FROM admin_users WHERE username = ?', [ADMIN_USER.username]);
   // Allow open handles (Supabase client keepalives) to settle
   await new Promise(r => setTimeout(r, 100));
 });
@@ -31,7 +27,6 @@ describe('Admin Authentication', () => {
       .send({ username: ADMIN_USER.username, password: ADMIN_USER.password })
       .expect(200);
     expect(res.body.success).toBe(true);
-    // Check Set-Cookie header
     const cookies = res.headers['set-cookie'];
     expect(cookies).toBeDefined();
     const sessionCookie = cookies.find(c => c.startsWith('session='));
@@ -57,6 +52,12 @@ describe('Admin Authentication', () => {
     expect(res.body).toHaveProperty('totalRevenue');
   });
 
+  test('Unauthenticated dashboard access is rejected', async () => {
+    await request(app)
+      .get('/api/dashboard/stats')
+      .expect(401);
+  });
+
   test('Logout clears session cookie', async () => {
     const loginRes = await request(app)
       .post('/api/admin/login')
@@ -72,5 +73,40 @@ describe('Admin Authentication', () => {
     const setCookie = logoutRes.headers['set-cookie'].join(';');
     expect(setCookie).toMatch(/session=;/); // value emptied
     expect(setCookie).toMatch(/Expires=Thu, 01 Jan 1970/); // expiry in the past
+  });
+});
+
+describe('Storefront read APIs', () => {
+  test('products list is seeded and parses variants', async () => {
+    const res = await request(app).get('/api/products').expect(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThanOrEqual(8);
+    expect(res.body[0].variants).toBeDefined();
+  });
+
+  test('settings returns the seeded hero content', async () => {
+    const res = await request(app).get('/api/settings').expect(200);
+    expect(res.body.hero_title).toBe('connecting farmers to the world');
+  });
+
+  test('banners and billboards endpoints agree', async () => {
+    const banners = await request(app).get('/api/banners').expect(200);
+    const billboards = await request(app).get('/api/billboards').expect(200);
+    expect(banners.body.length).toBe(billboards.body.length);
+  });
+
+  test('storefront order creation works without auth', async () => {
+    const res = await request(app)
+      .post('/api/orders')
+      .send({
+        customer_name: 'Test Customer',
+        phone: '+91 90000 00000',
+        address: 'Test Address',
+        total_price: 500,
+        items: [{ product_id: 1, name: 'Organic Sugarcane Jaggery Cubes', weight: '500g', quantity: 1, price: 180 }],
+      })
+      .expect(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.orderId).toBeDefined();
   });
 });

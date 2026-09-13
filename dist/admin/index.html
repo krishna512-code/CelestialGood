@@ -53,6 +53,7 @@
     <div class="form-group">
       <label>Password</label>
       <input type="password" id="loginPass" placeholder="••••••••" required>
+    <p class="forgot" style="text-align:center; margin-top:8px;"><a href="#" onclick="doForgotPassword()" style="color:#1B4332; font-size:14px;">Forgot password?</a></p>
     </div>
     <button onclick="doLogin()">Sign In</button>
     <p id="loginError" style="color: #c0392b; margin-top: 12px; text-align: center;" class="hidden">Invalid credentials</p>
@@ -168,6 +169,21 @@
       const pass = document.getElementById('loginPass').value;
       const r = await fetch('/api/admin/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username: user, password: pass}) });
       if (r.ok) { showAdmin(); } else { document.getElementById('loginError').classList.remove('hidden'); }
+    }
+    async function doForgotPassword() {
+      const email = prompt('Enter your admin email for password reset:');
+      if (!email) return;
+      const r = await fetch('/api/admin/forgot-password', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email })
+      });
+      if (r.ok) {
+        alert('Password reset email sent. Please check your inbox.');
+      } else {
+        const err = await r.json();
+        alert('Error: ' + (err.error || 'Failed to send reset email'));
+      }
     }
     
     async function doLogout() { await fetch('/api/admin/logout', {method:'POST'}); showLogin(); }
