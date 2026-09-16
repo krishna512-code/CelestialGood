@@ -102,14 +102,78 @@ describe('Storefront read APIs', () => {
       .post('/api/orders')
       .send({
         customer_name: 'Test Customer',
-        phone: '+91 90000 00000',
-        address: 'Test Address',
+        phone: '9000000000',
+        address: 'Test Address, Test Area',
+        city: 'Test City',
+        state: 'Test State',
+        pincode: '400001',
         total_price: 500,
         items: [{ product_id: 1, name: 'Organic Sugarcane Jaggery Cubes', weight: '500g', quantity: 1, price: 180 }],
       })
       .expect(200);
     expect(res.body.success).toBe(true);
     expect(res.body.orderId).toBeDefined();
+  });
+
+  test('COD checkout stores full customer details, location pin, and rejects invalid data', async () => {
+    const orderPayload = {
+      customer_name: 'COD Checkout Test',
+      phone: '+91 98765 43210',
+      email: 'cod@example.com',
+      address: '12 Heritage Lane, Green Fields',
+      landmark: 'Near Old Temple',
+      city: 'Kolhapur',
+      state: 'Maharashtra',
+      pincode: '416001',
+      notes: 'Ring the bell twice',
+      latitude: 16.705, longitude: 74.243,
+      map_link: 'https://maps.google.com/?q=16.705,74.243',
+      payment_method: 'cod',
+      total_price: 430,
+      items: [{ product_id: 1, name: 'Organic Sugarcane Jaggery Cubes', weight: '500g', quantity: 1, price: 180 },
+              { product_id: 6, name: 'Traditional Bilona A2 Desi Gir Cow Ghee', weight: '500ml', quantity: 1, price: 250 }],
+    };
+    const created = await request(app).post('/api/orders').send(orderPayload).expect(200);
+    expect(created.body.success).toBe(true);
+    const orderId = created.body.orderId;
+
+    // Admin view exposes every field the COD form collected
+    const loginRes = await request(app).post('/api/admin/login').send(ADMIN_USER).expect(200);
+    const cookie = loginRes.headers['set-cookie'];
+    const orders = await request(app).get('/api/orders').set('Cookie', cookie).expect(200);
+    const saved = orders.body.find(o => o.id === orderId);
+    expect(saved).toBeDefined();
+    expect(saved.customer_name).toBe('COD Checkout Test');
+    expect(saved.phone).toBe('9876543210'); // normalized to bare 10 digits
+    expect(saved.email).toBe('cod@example.com');
+    expect(saved.landmark).toBe('Near Old Temple');
+    expect(saved.city).toBe('Kolhapur');
+    expect(saved.state).toBe('Maharashtra');
+    expect(saved.pincode).toBe('416001');
+    expect(saved.notes).toBe('Ring the bell twice');
+    expect(Number(saved.latitude)).toBeCloseTo(16.705, 5);
+    expect(Number(saved.longitude)).toBeCloseTo(74.243, 5);
+    expect(saved.map_link).toBe('https://maps.google.com/?q=16.705,74.243');
+    expect(saved.payment_method).toBe('cod');
+    expect(saved.items).toHaveLength(2);
+
+    // Cleanup before validation checks (deleting is auth-only too)
+    await request(app).delete(`/api/orders/${orderId}`).set('Cookie', cookie).expect(200);
+
+    // Validation: each bad payload is rejected with 400 and a helpful message
+    const bad = (field, override) =>
+      request(app).post('/api/orders').send({ ...orderPayload, ...override }).then(res => {
+        expect(res.status).toBe(400);
+        expect(res.body.success).toBe(false);
+        expect(res.body.errors.join(' ')).toMatch(field);
+      });
+    await bad(/name/i, { customer_name: '' });
+    await bad(/mobile/i, { phone: '12345' });
+    await bad(/address/i, { address: 'x' });
+    await bad(/city/i, { city: '' });
+    await bad(/pincode/i, { pincode: '12345' });
+    await bad(/email/i, { email: 'not-an-email' });
+    await bad(/coordinates/i, { latitude: 999, longitude: 0 });
   });
 
   test('admin can set a product image via direct URL and it reaches the storefront', async () => {
@@ -154,6 +218,50 @@ describe('Storefront read APIs', () => {
     // Cleanup: soft-delete the test product
     await request(app)
       .delete(`/api/products/${productId}`)
+      .set('Cookie', cookie)
+      .expect(200);
+  });
+
+  test('admin can set a banner image via direct URL and it reaches the storefront', async () => {
+    const loginRes = await request(app)
+      .post('/api/admin/login')
+      .send(ADMIN_USER)
+      .expect(200);
+    const cookie = loginRes.headers['set-cookie'];
+
+    const imageUrl = 'https://cdn.example.com/banner-photo.jpg';
+
+    // Create a banner with a direct image URL (multipart, as the admin form does)
+    const created = await request(app)
+      .post('/api/banners')
+      .set('Cookie', cookie)
+      .field('heading', 'Image URL Test Banner')
+      .field('image_url', imageUrl)
+      .expect(200);
+    expect(created.body.success).toBe(true);
+    const bannerId = created.body.id;
+    expect(bannerId).toBeDefined();
+
+    // Storefront carousel endpoint exposes the URL exactly as provided
+    const list = await request(app).get('/api/banners').expect(200);
+    const listed = list.body.find(b => b.id === bannerId);
+    expect(listed).toBeDefined();
+    expect(listed.image_url).toBe(imageUrl);
+
+    // Updating the image to another URL is reflected too
+    const newUrl = 'https://cdn.example.com/banner-photo-v2.jpg';
+    const updated = await request(app)
+      .put(`/api/banners/${bannerId}`)
+      .set('Cookie', cookie)
+      .field('image_url', newUrl)
+      .expect(200);
+    expect(updated.body.success).toBe(true);
+    const after = (await request(app).get('/api/banners').expect(200)).body.find(b => b.id === bannerId);
+    expect(after.image_url).toBe(newUrl);
+
+    // Cleanup: banners are hard-deleted
+    await request(app)
+      .delete(`/api/banners/${bannerId}`)
       .set('Cookie', cookie)
       .expect(200);
   });

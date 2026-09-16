@@ -14,6 +14,22 @@ export const DB_DRIVER = process.env.DATABASE_URL ? 'postgres' : 'sqlite';
 let sqlite = null;
 let pool = null;
 
+// Columns added to `orders` after the initial schema. SQLite migrations run at
+// init; Postgres migrations run lazily on first query (initDatabase is a
+// SQLite-only code path).
+export const ORDER_DETAIL_COLUMNS = [
+  ['email', "TEXT DEFAULT ''"],
+  ['landmark', "TEXT DEFAULT ''"],
+  ['city', "TEXT DEFAULT ''"],
+  ['state', "TEXT DEFAULT ''"],
+  ['pincode', "TEXT DEFAULT ''"],
+  ['notes', "TEXT DEFAULT ''"],
+  ['latitude', 'REAL'],
+  ['longitude', 'REAL'],
+  ['map_link', "TEXT DEFAULT ''"],
+  ['payment_method', "TEXT DEFAULT 'cod'"],
+];
+
 if (DB_DRIVER === 'postgres') {
   const { Pool } = await import('pg');
   const needsSsl = !/localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL);
@@ -43,6 +59,17 @@ if (DB_DRIVER === 'postgres') {
   }
 }
 
+// Postgres lazily self-migrates the orders table on first query so a deploy
+// against existing Supabase data never needs a manual ALTER step.
+let pgMigrated = false;
+async function ensurePgMigrated() {
+  if (pgMigrated) return;
+  for (const [col, def] of ORDER_DETAIL_COLUMNS) {
+    await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ${col} ${def}`);
+  }
+  pgMigrated = true;
+}
+
 // Translate SQLite-style placeholders/dialect to Postgres.
 function toPgSql(sql) {
   let i = 0;
@@ -54,6 +81,7 @@ function toPgSql(sql) {
 /** Run a SELECT; resolves to an array of row objects. */
 export async function query(sql, params = []) {
   if (DB_DRIVER === 'postgres') {
+    await ensurePgMigrated();
     const r = await pool.query(toPgSql(sql), params);
     return r.rows;
   }
@@ -69,6 +97,7 @@ export async function queryOne(sql, params = []) {
 /** Run an INSERT/UPDATE/DELETE; resolves to { changes, lastId }. */
 export async function run(sql, params = []) {
   if (DB_DRIVER === 'postgres') {
+    await ensurePgMigrated();
     let pgSql = toPgSql(sql);
     if (/^\s*INSERT/i.test(pgSql) && !/RETURNING/i.test(pgSql)) {
       pgSql += ' RETURNING id';
@@ -163,7 +192,17 @@ export async function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       customer_name TEXT DEFAULT '',
       phone TEXT DEFAULT '',
+      email TEXT DEFAULT '',
       address TEXT DEFAULT '',
+      landmark TEXT DEFAULT '',
+      city TEXT DEFAULT '',
+      state TEXT DEFAULT '',
+      pincode TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      latitude REAL,
+      longitude REAL,
+      map_link TEXT DEFAULT '',
+      payment_method TEXT DEFAULT 'cod',
       total_price REAL DEFAULT 0,
       is_paid INTEGER DEFAULT 0,
       status TEXT DEFAULT 'pending',
@@ -225,6 +264,11 @@ export async function initDatabase() {
 
   // Migration for DBs created before the role column existed
   try { sqlite.exec("ALTER TABLE admin_users ADD COLUMN role TEXT DEFAULT 'admin'"); } catch {}
+
+  // Migration for DBs created before COD checkout details existed
+  for (const [col, def] of ORDER_DETAIL_COLUMNS) {
+    try { sqlite.exec(`ALTER TABLE orders ADD COLUMN ${col} ${def}`); } catch {}
+  }
 
   // Optional Owner Bootstrap via environment variables
   if (process.env.OWNER_USERNAME && process.env.OWNER_PASSWORD) {

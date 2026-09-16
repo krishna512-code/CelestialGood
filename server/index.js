@@ -467,18 +467,59 @@ app.get('/api/orders', requireAuth, async (req, res) => {
   res.json(withItems);
 });
 
+// COD checkout: the storefront form posts the customer's details here (no auth).
+// Only COD is supported today; payment_method is forced server-side.
 app.post('/api/orders', async (req, res) => {
-  const { customer_name, phone, address, items, total_price } = req.body || {};
+  const b = req.body || {};
+  const items = Array.isArray(b.items) ? b.items : [];
+
+  const text = (v, max) => String(v ?? '').trim().slice(0, max);
+  const order = {
+    customer_name: text(b.customer_name, 120),
+    phone: text(b.phone, 20),
+    email: text(b.email, 160),
+    address: text(b.address, 400),
+    landmark: text(b.landmark, 200),
+    city: text(b.city, 100),
+    state: text(b.state, 100),
+    pincode: text(b.pincode, 10).replace(/\s+/g, ''),
+    notes: text(b.notes, 500),
+    map_link: text(b.map_link, 500),
+  };
+
+  // --- Validation (server-side, mirrors the client form) ---
+  const errors = [];
+  if (order.customer_name.length < 2) errors.push('Full name is required.');
+  const phoneDigits = order.phone.replace(/[^0-9]/g, '').replace(/^91(?=[6-9])/, '');
+  if (!/^[6-9]\d{9}$/.test(phoneDigits)) errors.push('A valid 10-digit Indian mobile number is required.');
+  if (order.address.length < 6) errors.push('Full address is required.');
+  if (!order.city) errors.push('City is required.');
+  if (!order.state) errors.push('State is required.');
+  if (!/^\d{6}$/.test(order.pincode)) errors.push('A valid 6-digit pincode is required.');
+  if (order.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(order.email)) errors.push('Email address is not valid.');
+  const latitude = b.latitude === undefined || b.latitude === null || b.latitude === '' ? null : Number(b.latitude);
+  const longitude = b.longitude === undefined || b.longitude === null || b.longitude === '' ? null : Number(b.longitude);
+  const hasCoords = latitude !== null && longitude !== null;
+  if (hasCoords && (!(Number.isFinite(latitude) && Math.abs(latitude) <= 90) || !(Number.isFinite(longitude) && Math.abs(longitude) <= 180))) {
+    errors.push('Location coordinates are not valid.');
+  }
+  if (errors.length) {
+    return res.status(400).json({ success: false, errors, message: errors[0] });
+  }
+
+  const total = Math.max(0, Math.round((parseFloat(b.total_price) || 0) * 100) / 100);
   const r = await run(
-    `INSERT INTO orders (customer_name, phone, address, total_price, is_paid, status) VALUES (?, ?, ?, ?, 0, 'pending')`,
-    [customer_name || 'Customer', phone || '', address || '', parseFloat(total_price) || 0]
+    `INSERT INTO orders (customer_name, phone, email, address, landmark, city, state, pincode, notes, latitude, longitude, map_link, payment_method, total_price, is_paid, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, 0, 'pending')`,
+    [order.customer_name, phoneDigits, order.email, order.address, order.landmark, order.city, order.state, order.pincode, order.notes,
+     hasCoords ? latitude : null, hasCoords ? longitude : null, order.map_link, total]
   );
   const orderId = r.lastId;
   if (Array.isArray(items)) {
-    for (const item of items) {
+    for (const item of items.slice(0, 50)) {
       await run(
         `INSERT INTO order_items (order_id, product_id, product_name, weight, quantity, price) VALUES (?, ?, ?, ?, ?, ?)`,
-        [orderId, item.product_id || null, item.name || '', item.weight || '', item.quantity || 1, item.price || 0]
+        [orderId, item.product_id || null, text(item.name, 200), text(item.weight, 60), Math.max(1, Math.min(999, parseInt(item.quantity, 10) || 1)), Math.max(0, parseFloat(item.price) || 0)]
       );
     }
   }
