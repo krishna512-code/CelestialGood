@@ -50,10 +50,18 @@ const STATEMENTS = [
   // 2) RLS on every app table (idempotent).
   ...APP_TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),
 
-  // 3) Policy model: NO anon/authenticated policies are created. RLS with no
-  //    policy denies those roles completely, closing the PostgREST side door
-  //    (the app connects with the direct service connection, which bypasses
-  //    RLS — matching scripts/migrate-pg.mjs's service_role model).
+  // 3) Policy model: explicit deny-all for anon/authenticated on every table.
+  //    RLS with no policy also denies them, but an explicit USING(false)
+  //    policy states the intent (and keeps the advisor's no-policy lint
+  //    quiet). The app connects with the direct service connection, which
+  //    bypasses RLS — matching scripts/migrate-pg.mjs's service_role model.
+  ...APP_TABLES.map((t) => `DO $$
+   BEGIN
+     IF NOT EXISTS (SELECT 1 FROM pg_policies
+                    WHERE schemaname = 'public' AND tablename = '${t}' AND policyname = 'deny_anon_all') THEN
+       EXECUTE $$CREATE POLICY deny_anon_all ON public.${t} FOR ALL TO anon, authenticated USING (false) WITH CHECK (false)$$;
+     END IF;
+   END $$`),
 ];
 
 let applied = false;
