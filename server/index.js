@@ -57,6 +57,10 @@ app.use((req, res, next) => {
             } catch {}
           }
         }
+        if (req.session && req.session.customerId) {
+          // Customer (storefront) session — separate from admin auth.
+          req.account = { customerId: req.session.customerId };
+        }
       }
     } catch {}
   }
@@ -66,6 +70,12 @@ app.use((req, res, next) => {
 function requireAuth(req, res, next) {
   if (req.session && (req.session.userId || req.session.token)) return next();
   res.status(401).json({ error: 'Unauthorized. Please login.' });
+}
+
+// Guard for customer-account routes (storefront, not admin).
+function requireCustomer(req, res, next) {
+  if (req.account && req.account.customerId) return next();
+  res.status(401).json({ error: 'Please sign in to continue.' });
 }
 
 // Parse the session cookie once for any handler that needs the raw token
@@ -167,6 +177,111 @@ app.post('/api/admin/change-password', requireAuth, async (req, res) => {
 // ==========================================
 // DASHBOARD
 // ==========================================
+// ==========================================
+// CUSTOMER ACCOUNTS (storefront sign-in)
+// ==========================================
+// Normalize a phone to its bare international digits for storage/matching.
+// India equivalence: '+91 98765 43210', '09876543210' and '9876543210' all
+// collapse to '9876543210' so order history matches across formats.
+function phoneKey(raw) {
+  let d = String(raw ?? '').replace(/[^0-9]/g, '');
+  if (d.length === 12 && d.startsWith('91')) d = d.slice(2);
+  else if (d.length === 11 && d.startsWith('0')) d = d.slice(1);
+  return d;
+}
+
+app.post('/api/account/register', async (req, res) => {
+  const b = req.body || {};
+  const text = (v, max) => String(v ?? '').trim().slice(0, max);
+  const key = phoneKey(b.phone);
+  const password = String(b.password ?? '');
+  const full_name = text(b.full_name, 120);
+  if (!/^\d{7,15}$/.test(key)) return res.status(400).json({ success: false, message: 'A valid phone number with country code is required (7-15 digits).' });
+  if (password.length < 8) return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
+  if (full_name.length < 2) return res.status(400).json({ success: false, message: 'Please enter your name.' });
+  const existing = await queryOne('SELECT id FROM customers WHERE phone_digits = ?', [key]);
+  if (existing) return res.status(409).json({ success: false, message: 'An account with this phone number already exists — please sign in.' });
+  const r = await run(
+    'INSERT INTO customers (phone_digits, password_hash, full_name, email) VALUES (?, ?, ?, ?)',
+    [key, hashPassword(password), full_name, text(b.email, 160)]
+  );
+  const encoded = Buffer.from(JSON.stringify({ customerId: r.lastId, expiry: Date.now() + 30 * 86400000 })).toString('base64');
+  res.cookie('session', encoded, { httpOnly: true, maxAge: 30 * 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
+  res.json({ success: true, customer: { id: r.lastId, phone: key, full_name } });
+});
+
+app.post('/api/account/login', async (req, res) => {
+  const { phone, password } = req.body || {};
+  const key = phoneKey(phone);
+  const customer = await queryOne('SELECT * FROM customers WHERE phone_digits = ?', [key]);
+  if (!customer || !verifyPassword(String(password ?? ''), customer.password_hash)) {
+    return res.status(401).json({ success: false, message: 'Phone number or password is incorrect.' });
+  }
+  const encoded = Buffer.from(JSON.stringify({ customerId: customer.id, expiry: Date.now() + 30 * 86400000 })).toString('base64');
+  res.cookie('session', encoded, { httpOnly: true, maxAge: 30 * 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
+  res.json({ success: true, customer: { id: customer.id, phone: customer.phone_digits, full_name: customer.full_name } });
+});
+
+app.post('/api/account/logout', (req, res) => {
+  res.clearCookie('session');
+  res.json({ success: true });
+});
+
+app.get('/api/account/me', async (req, res) => {
+  if (!req.account?.customerId) return res.json({ signedIn: false });
+  const c = await queryOne(
+    'SELECT id, phone_digits, full_name, email, address, landmark, city, state, postal_code, country, notes FROM customers WHERE id = ?',
+    [req.account.customerId]
+  );
+  if (!c) return res.json({ signedIn: false });
+  res.json({ signedIn: true, customer: c });
+});
+
+app.put('/api/account/profile', requireCustomer, async (req, res) => {
+  const b = req.body || {};
+  const text = (v, max) => String(v ?? '').trim().slice(0, max);
+  const full_name = text(b.full_name, 120);
+  if (full_name.length < 2) return res.status(400).json({ success: false, message: 'Please enter your name.' });
+  if (b.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(b.email).trim())) {
+    return res.status(400).json({ success: false, message: 'Email address is not valid.' });
+  }
+  await run(
+    `UPDATE customers SET full_name = ?, email = ?, address = ?, landmark = ?, city = ?, state = ?, postal_code = ?, country = ?, notes = ? WHERE id = ?`,
+    [full_name, text(b.email, 160), text(b.address, 400), text(b.landmark, 200), text(b.city, 100),
+     text(b.state, 100), text(b.postal_code, 16), text(b.country, 80), text(b.notes, 500), req.account.customerId]
+  );
+  const c = await queryOne(
+    'SELECT id, phone_digits, full_name, email, address, landmark, city, state, postal_code, country, notes FROM customers WHERE id = ?',
+    [req.account.customerId]
+  );
+  res.json({ success: true, customer: c });
+});
+
+app.get('/api/account/orders', requireCustomer, async (req, res) => {
+  const me = await queryOne('SELECT id, phone_digits FROM customers WHERE id = ?', [req.account.customerId]);
+  if (!me) return res.json([]);
+  const key = me.phone_digits;
+  // Orders placed while signed in, plus every guest order whose phone matches
+  // this account (phoneKey on both sides so +91/0-prefixed variants match).
+  const orders = await query(
+    `SELECT * FROM orders WHERE customer_id = ? OR phone = ? ORDER BY created_at DESC, id DESC LIMIT 200`,
+    [me.id, key]
+  );
+  // Phone match needs normalization per row (orders may store '91'-prefixed
+  // or 0-prefixed variants); filter in JS over a modest set.
+  const rows = orders.length >= 200 ? orders : await query('SELECT * FROM orders ORDER BY created_at DESC, id DESC LIMIT 1000');
+  const matched = rows.filter(o => o.customer_id === me.id || phoneKey(o.phone) === key);
+  const withItems = await Promise.all(matched.map(async o => ({
+    id: o.id,
+    created_at: o.created_at,
+    total_price: o.total_price,
+    is_paid: o.is_paid,
+    status: o.status,
+    items: await query('SELECT product_name, weight, quantity, price FROM order_items WHERE order_id = ?', [o.id]),
+  })));
+  res.json(withItems);
+});
+
 app.get('/api/dashboard/stats', requireAuth, async (req, res) => {
   const totalRevenue = (await queryOne('SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE is_paid = 1')).total;
   const totalSales = (await queryOne('SELECT COUNT(*) as count FROM orders')).count;
@@ -501,13 +616,13 @@ app.post('/api/orders', async (req, res) => {
   const text = (v, max) => String(v ?? '').trim().slice(0, max);
   const order = {
     customer_name: text(b.customer_name, 120),
-    phone: text(b.phone, 20),
+    phone: text(b.phone, 24),
     email: text(b.email, 160),
     address: text(b.address, 400),
     landmark: text(b.landmark, 200),
     city: text(b.city, 100),
     state: text(b.state, 100),
-    pincode: text(b.pincode, 10).replace(/\s+/g, ''),
+    pincode: text(b.postal_code ?? b.pincode, 16).replace(/\s+/g, ''),
     notes: text(b.notes, 500),
     map_link: text(b.map_link, 500),
   };
@@ -519,14 +634,15 @@ app.post('/api/orders', async (req, res) => {
   }
 
   // --- Validation (server-side, mirrors the client form) ---
+  // International: any country dialing. Phones keep their digits (E.164 is
+  // 7-15 digits); postal codes are alphanumeric (US ZIP, UK "SW1A 1AA", etc.).
   const errors = [];
   if (order.customer_name.length < 2) errors.push('Full name is required.');
-  const phoneDigits = order.phone.replace(/[^0-9]/g, '').replace(/^91(?=[6-9])/, '');
-  if (!/^[6-9]\d{9}$/.test(phoneDigits)) errors.push('A valid 10-digit Indian mobile number is required.');
+  const phoneDigits = order.phone.replace(/[^0-9]/g, '');
+  if (!/^\d{7,15}$/.test(phoneDigits)) errors.push('A valid phone number with country code is required (7-15 digits).');
   if (order.address.length < 6) errors.push('Full address is required.');
   if (!order.city) errors.push('City is required.');
-  if (!order.state) errors.push('State is required.');
-  if (!/^\d{6}$/.test(order.pincode)) errors.push('A valid 6-digit pincode is required.');
+  if (!/^[A-Za-z0-9][A-Za-z0-9 -]{1,14}$/.test(order.pincode)) errors.push('A valid postal / ZIP code is required.');
   if (order.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(order.email)) errors.push('Email address is not valid.');
   const latitude = b.latitude === undefined || b.latitude === null || b.latitude === '' ? null : Number(b.latitude);
   const longitude = b.longitude === undefined || b.longitude === null || b.longitude === '' ? null : Number(b.longitude);
@@ -540,10 +656,10 @@ app.post('/api/orders', async (req, res) => {
 
   const total = Math.max(0, Math.round((parseFloat(b.total_price) || 0) * 100) / 100);
   const r = await run(
-    `INSERT INTO orders (customer_name, phone, email, address, landmark, city, state, pincode, notes, latitude, longitude, map_link, payment_method, total_price, is_paid, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, 0, 'pending')`,
+    `INSERT INTO orders (customer_name, phone, email, address, landmark, city, state, pincode, notes, latitude, longitude, map_link, payment_method, total_price, is_paid, status, customer_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, 0, 'pending', ?)`,
     [order.customer_name, phoneDigits, order.email, order.address, order.landmark, order.city, order.state, order.pincode, order.notes,
-     hasCoords ? latitude : null, hasCoords ? longitude : null, order.map_link, total]
+     hasCoords ? latitude : null, hasCoords ? longitude : null, order.map_link, total, req.account?.customerId ?? null]
   );
   const orderId = r.lastId;
   try {

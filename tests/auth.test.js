@@ -40,6 +40,95 @@ describe('Admin Authentication', () => {
       .expect(401);
   });
 
+  test('customer accounts: international register, login, profile edit, and phone-matched order history', async () => {
+    const ukPhone = '+44 7911 123456';
+    const bareDigits = '447911123456';
+    const inDigits = '9876543210';
+    // Idempotent across runs: remove any leftover rows from earlier attempts
+    await run('DELETE FROM customers WHERE phone_digits IN (?, ?, ?)', [bareDigits, inDigits, '7911123456']);
+
+    // Register (international phone) -> auto sign-in cookie
+    const reg = await request(app)
+      .post('/api/account/register')
+      .send({ full_name: 'Nigel test', phone: ukPhone, email: 'nigel@example.co.uk', password: 'Password123!' })
+      .expect(200);
+    expect(reg.body.success).toBe(true);
+    expect(reg.body.customer.phone).toBe(bareDigits);
+    const cookie = reg.headers['set-cookie'];
+
+    // Duplicate registration rejected — same number, different formatting
+    await request(app)
+      .post('/api/account/register')
+      .send({ full_name: 'Nigel Again', phone: '+447911123456', password: 'Password123!' })
+      .expect(409);
+
+    // me() returns the profile
+    const me = await request(app).get('/api/account/me').set('Cookie', cookie).expect(200);
+    expect(me.body.signedIn).toBe(true);
+    expect(me.body.customer.phone_digits).toBe(bareDigits);
+
+    // Profile edit persists (address block + country)
+    const upd = await request(app)
+      .put('/api/account/profile')
+      .set('Cookie', cookie)
+      .send({
+        full_name: 'Nigel Test', email: 'nigel@example.co.uk', country: 'United Kingdom',
+        address: '10 Downing Street', landmark: 'Near the cat', postal_code: 'SW1A 1AA',
+        city: 'London', state: 'Greater London',
+      })
+      .expect(200);
+    expect(upd.body.customer.postal_code).toBe('SW1A 1AA');
+    expect(upd.body.customer.country).toBe('United Kingdom');
+
+    // A GUEST order placed with the same UK phone appears in history
+    await request(app)
+      .post('/api/orders')
+      .send({
+        customer_name: 'Nigel Guest', phone: '+44 7911 123456', address: '10 Downing Street, Whitehall',
+        city: 'London', postal_code: 'SW1A 1AA', total_price: 180,
+        items: [{ name: 'Jaggery Cubes', weight: '500g', quantity: 1, price: 180 }],
+      })
+      .expect(200);
+
+    // ...and an India-equivalence guest order (0-prefix variant)
+    const inPhone = '+91 98765 43210';
+    await request(app).post('/api/account/register')
+      .send({ full_name: 'Asha Test', phone: inPhone, password: 'Password123!' }).expect(200);
+    const inCookie = (await request(app).post('/api/account/login')
+      .send({ phone: '09876543210', password: 'Password123!' }).expect(200)).headers['set-cookie'];
+    await request(app)
+      .post('/api/orders')
+      .send({
+        customer_name: 'Asha Guest', phone: '9876543210', address: '5 MG Road, Area',
+        city: 'Kolhapur', postal_code: '416001', total_price: 320,
+        items: [{ name: 'Honey', weight: '250g', quantity: 1, price: 320 }],
+      })
+      .expect(200);
+
+    const orders = await request(app).get('/api/account/orders').set('Cookie', cookie).expect(200);
+    expect(Array.isArray(orders.body)).toBe(true);
+    expect(orders.body.length).toBeGreaterThanOrEqual(1);
+    expect(orders.body[0].status).toBeDefined();
+    expect(orders.body[0].items.length).toBe(1);
+
+    const inOrders = await request(app).get('/api/account/orders').set('Cookie', inCookie).expect(200);
+    expect(inOrders.body.length).toBeGreaterThanOrEqual(1);
+
+    // Signed-out access to protected account routes is rejected
+    await request(app).get('/api/account/orders').expect(401);
+    await request(app).put('/api/account/profile').send({ full_name: 'X Y' }).expect(401);
+
+    // Logout instructs the browser to drop the stateless session cookie
+    // (same design as admin sessions — expiry encoded in the cookie).
+    const logoutRes = await request(app).post('/api/account/logout').set('Cookie', cookie).expect(200);
+    const setC = logoutRes.headers['set-cookie'].join(';');
+    expect(setC).toMatch(/session=;/); // value emptied
+    expect(setC).toMatch(/Expires=Thu, 01 Jan 1970/); // expiry in the past
+
+    // Cleanup customers created here
+    await run('DELETE FROM customers WHERE phone_digits IN (?, ?)', [bareDigits, inDigits]);
+  });
+
   test('a Supabase-JWT-shaped session cookie grants access to protected routes', async () => {
     // Regression: logging in through Supabase auth stored the raw JWT in the
     // session cookie. /api/admin/me accepted it, but requireAuth only
@@ -223,7 +312,7 @@ describe('Storefront read APIs', () => {
     const saved = orders.body.find(o => o.id === orderId);
     expect(saved).toBeDefined();
     expect(saved.customer_name).toBe('COD Checkout Test');
-    expect(saved.phone).toBe('9876543210'); // normalized to bare 10 digits
+    expect(saved.phone).toBe('919876543210'); // digits kept, country code preserved
     expect(saved.email).toBe('cod@example.com');
     expect(saved.landmark).toBe('Near Old Temple');
     expect(saved.city).toBe('Kolhapur');
@@ -247,10 +336,10 @@ describe('Storefront read APIs', () => {
         expect(res.body.errors.join(' ')).toMatch(field);
       });
     await bad(/name/i, { customer_name: '' });
-    await bad(/mobile/i, { phone: '12345' });
+    await bad(/phone/i, { phone: '12345' });
     await bad(/address/i, { address: 'x' });
     await bad(/city/i, { city: '' });
-    await bad(/pincode/i, { pincode: '12345' });
+    await bad(/postal/i, { pincode: '##' }); // non-alphanumeric postal code
     await bad(/email/i, { email: 'not-an-email' });
     await bad(/coordinates/i, { latitude: 999, longitude: 0 });
   });

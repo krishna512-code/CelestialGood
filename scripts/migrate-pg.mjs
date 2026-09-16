@@ -96,7 +96,18 @@ CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   customer_name TEXT DEFAULT '',
   phone TEXT DEFAULT '',
+  email TEXT DEFAULT '',
   address TEXT DEFAULT '',
+  landmark TEXT DEFAULT '',
+  city TEXT DEFAULT '',
+  state TEXT DEFAULT '',
+  pincode TEXT DEFAULT '',
+  notes TEXT DEFAULT '',
+  latitude REAL,
+  longitude REAL,
+  map_link TEXT DEFAULT '',
+  payment_method TEXT DEFAULT 'cod',
+  customer_id INTEGER,
   total_price REAL DEFAULT 0,
   is_paid INTEGER DEFAULT 0,
   status TEXT DEFAULT 'pending',
@@ -111,6 +122,22 @@ CREATE TABLE IF NOT EXISTS order_items (
   weight TEXT DEFAULT '',
   quantity INTEGER DEFAULT 1,
   price REAL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS customers (
+  id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  phone_digits TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  full_name TEXT DEFAULT '',
+  email TEXT DEFAULT '',
+  address TEXT DEFAULT '',
+  landmark TEXT DEFAULT '',
+  city TEXT DEFAULT '',
+  state TEXT DEFAULT '',
+  postal_code TEXT DEFAULT '',
+  country TEXT DEFAULT '',
+  notes TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS testimonials (
@@ -191,6 +218,7 @@ async function main() {
       ALTER TABLE images ENABLE ROW LEVEL SECURITY;
       ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
       ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
       ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
       ALTER TABLE faq ENABLE ROW LEVEL SECURITY;
       ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
@@ -202,7 +230,9 @@ async function main() {
       DROP POLICY IF EXISTS "service role full access" ON products; CREATE POLICY "service role full access" ON products FOR ALL TO service_role USING (true) WITH CHECK (true);
       DROP POLICY IF EXISTS "service role full access" ON images; CREATE POLICY "service role full access" ON images FOR ALL TO service_role USING (true) WITH CHECK (true);
       DROP POLICY IF EXISTS "service role full access" ON orders; CREATE POLICY "service role full access" ON orders FOR ALL TO service_role USING (true) WITH CHECK (true);
-      DROP POLICY IF EXISTS "service role full access" ON order_items; CREATE POLICY "service role full access" ON order_items FOR ALL TO service_role USING (true) WITH CHECK (true);
+      DROP POLICY IF EXISTS "service role full access" ON order_items;
+      DROP POLICY IF EXISTS "service role full access" ON customers; CREATE POLICY "service role full access" ON order_items FOR ALL TO service_role USING (true) WITH CHECK (true);
+      DROP POLICY IF EXISTS "service role full access" ON customers; CREATE POLICY "service role full access" ON customers FOR ALL TO service_role USING (true) WITH CHECK (true);
       DROP POLICY IF EXISTS "service role full access" ON testimonials; CREATE POLICY "service role full access" ON testimonials FOR ALL TO service_role USING (true) WITH CHECK (true);
       DROP POLICY IF EXISTS "service role full access" ON faq; CREATE POLICY "service role full access" ON faq FOR ALL TO service_role USING (true) WITH CHECK (true);
       DROP POLICY IF EXISTS "service role full access" ON site_settings; CREATE POLICY "service role full access" ON site_settings FOR ALL TO service_role USING (true) WITH CHECK (true);

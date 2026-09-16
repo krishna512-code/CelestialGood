@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Account — Celestial Good</title>
+  <meta name="description" content="Sign in to your Celestial Good account to see your profile, order history and delivery status.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/brochure.css">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <style>
+    .hidden { display: none !important; }
+    .account-section { padding: 110px 0 80px; min-height: 70vh; }
+    .account-card { max-width: 760px; margin: 0 auto; background: var(--cream-light); border: 1px solid var(--line); border-radius: 20px; padding: 32px; box-shadow: 0 16px 48px rgba(18,41,30,.08); }
+    .auth-tabs { display: flex; gap: 8px; margin-bottom: 22px; }
+    .auth-tab { flex: 1; padding: 11px; border: 1.5px solid var(--line); background: #fff; border-radius: 12px; font: inherit; font-weight: 600; color: var(--green-mid); cursor: pointer; }
+    .auth-tab.active { background: var(--green-dark); color: #fff; border-color: var(--green-dark); }
+    .auth-form { display: flex; flex-direction: column; gap: 12px; }
+    .auth-form label { font-size: .78rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--green-mid); }
+    .auth-form input { width: 100%; padding: 11px 13px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; font: inherit; font-size: .95rem; }
+    .auth-form input:focus { outline: none; border-color: var(--gold); }
+    .form-msg { font-size: .9rem; margin-top: 10px; }
+    .form-msg.err { color: #c0392b; }
+    .form-msg.ok { color: var(--green-mid); }
+    .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+    .profile-item .k { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--green-mid); font-weight: 700; }
+    .profile-item .v { font-size: .98rem; color: var(--green-dark); margin-top: 2px; }
+    .order-card { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-top: 14px; background: #fff; }
+    .order-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .order-id { font-weight: 700; color: var(--green-dark); }
+    .order-date { font-size: .82rem; color: var(--gray, #7a8a80); }
+    .status-badge { padding: 3px 12px; border-radius: 999px; font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .status-pending { background: rgba(196,148,61,.15); color: #8a6420; }
+    .status-confirmed { background: rgba(45,106,79,.12); color: #2D6A4F; }
+    .status-shipped { background: rgba(43,90,158,.12); color: #2b5a9e; }
+    .status-delivered { background: rgba(45,106,79,.2); color: #1B4332; }
+    .status-cancelled { background: rgba(192,57,43,.12); color: #c0392b; }
+    .order-items { margin-top: 10px; font-size: .9rem; color: var(--green-dark); }
+    .order-items .oi { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+    .order-total { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); display: flex; justify-content: space-between; font-weight: 700; color: var(--green-dark); }
+    .paid-flag { font-size: .76rem; color: var(--green-mid); }
+    .section-label-sm { font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); }
+    @media (max-width: 560px) { .profile-grid { grid-template-columns: 1fr; } .account-card { padding: 22px; } }
+  </style>
+</head>
+<body>
+  <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+  <div class="announce-bar" id="announce-bar"><span class="gold">Free delivery</span> on orders above ₹999 &nbsp;·&nbsp; 📦 COD available across India</div>
+  <header class="site-header" id="site-header">
+    <div class="container header-inner">
+      <a href="/" class="logo" aria-label="Celestial Good home"><img src="assets/celestial-good-logo.png" alt="Celestial Good Logo" class="logo-img"></a>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="/#story">Our Story</a><a href="/#products">Products</a><a href="/shop.html">Shop</a><a href="/#faq">FAQ</a><a href="/#contact">Contact</a>
+      </nav>
+      <div class="header-right">
+        <a href="/account.html" class="btn btn-ghost btn-sm is-current">My Account</a>
+        <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-nav"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="account-section">
+      <div class="container">
+        <div class="account-card">
+          <!-- Signed out: auth forms -->
+          <div id="auth-view" class="hidden">
+            <h1 style="margin-bottom: 6px;">Welcome to Celestial Good</h1>
+            <p style="color: var(--gray, #7a8a80); margin-bottom: 20px;">Sign in to see your profile and order history — or order as a guest any time.</p>
+            <div class="auth-tabs" role="tablist">
+              <button type="button" class="auth-tab active" id="tab-signin" role="tab" aria-selected="true">Sign In</button>
+              <button type="button" class="auth-tab" id="tab-register" role="tab" aria-selected="false">Create Account</button>
+            </div>
+            <form class="auth-form" id="login-form" novalidate>
+              <div><label for="li-phone">Phone (with country code)</label><input id="li-phone" type="tel" autocomplete="tel" placeholder="e.g. +91 98765 43210" required></div>
+              <div><label for="li-pass">Password</label><input id="li-pass" type="password" autocomplete="current-password" placeholder="Your password" required></div>
+              <button type="submit" class="btn btn-gold" id="li-btn">Sign In</button>
+              <p class="form-msg hidden" id="li-msg"></p>
+            </form>
+            <form class="auth-form hidden" id="register-form" novalidate>
+              <div><label for="re-name">Full name</label><input id="re-name" type="text" autocomplete="name" placeholder="Your name" required></div>
+              <div><label for="re-phone">Phone (with country code)</label><input id="re-phone" type="tel" autocomplete="tel" placeholder="e.g. +91 98765 43210" required></div>
+              <div><label for="re-email">Email <span style="text-transform:none;font-weight:500;">(optional)</span></label><input id="re-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+              <div><label for="re-pass">Password</label><input id="re-pass" type="password" autocomplete="new-password" placeholder="At least 8 characters" required></div>
+              <button type="submit" class="btn btn-gold" id="re-btn">Create Account</button>
+              <p class="form-msg hidden" id="re-msg"></p>
+            </form>
+          </div>
+
+          <!-- Signed in: profile + orders -->
+          <div id="profile-view" class="hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+              <h1 style="margin-bottom:0;">My Account</h1>
+              <button type="button" class="btn btn-outline btn-sm" id="logout-btn">Sign Out</button>
+            </div>
+            <p class="section-label-sm" style="margin-top:22px;">Profile</p>
+            <div id="profile-card" class="profile-grid" style="margin-top:10px;"></div>
+            <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+              <button type="button" class="btn btn-gold btn-sm" id="edit-profile-btn">Edit Profile &amp; Address</button>
+            </div>
+            <form class="auth-form hidden" id="profile-form" style="margin-top:16px;" novalidate>
+              <div class="profile-grid">
+                <div><label for="pf-name">Full name</label><input id="pf-name" type="text" autocomplete="name"></div>
+                <div><label for="pf-email">Email</label><input id="pf-email" type="email" autocomplete="email"></div>
+                <div><label for="pf-country">Country</label><input id="pf-country" type="text" autocomplete="country-name" placeholder="e.g. India, United Kingdom"></div>
+                <div><label for="pf-phone">Phone (read-only)</label><input id="pf-phone" type="tel" disabled></div>
+                <div style="grid-column:1/-1;"><label for="pf-address">Address</label><input id="pf-address" type="text" autocomplete="street-address"></div>
+                <div><label for="pf-landmark">Landmark</label><input id="pf-landmark" type="text" placeholder="Optional"></div>
+                <div><label for="pf-postal">Postal / ZIP code</label><input id="pf-postal" type="text" autocomplete="postal-code"></div>
+                <div><label for="pf-city">City</label><input id="pf-city" type="text" autocomplete="address-level2"></div>
+                <div><label for="pf-state">State / Province</label><input id="pf-state" type="text" autocomplete="address-level1"></div>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button type="submit" class="btn btn-gold btn-sm" id="pf-save-btn">Save Changes</button>
+                <button type="button" class="btn btn-outline btn-sm" id="pf-cancel-btn">Cancel</button>
+              </div>
+              <p class="form-msg hidden" id="pf-msg"></p>
+            </form>
+
+            <p class="section-label-sm" style="margin-top:30px;">Order History</p>
+            <div id="orders-list"><p style="color:var(--gray,#7a8a80);">Loading your orders…</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"><span class="tick" aria-hidden="true">✓</span><span id="toast-msg">Saved</span></div>
+
+  <script>
+  (function(){
+    "use strict";
+    function $(s){ return document.querySelector(s); }
+    function show(el){ el.classList.remove("hidden"); }
+    function hide(el){ el.classList.add("hidden"); }
+    function esc(v){ return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){ return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c]; }); }
+    function formatINR(v){ return "₹" + Number(v || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 }); }
+    function toast(msg){ var t = $("#toast"); $("#toast-msg").textContent = msg; t.classList.add("show"); setTimeout(function(){ t.classList.remove("show"); }, 2200); }
+    function msg(el, text, isErr){ el.textContent = text; el.className = "form-msg " + (isErr ? "err" : "ok"); show(el); }
+
+    var customer = null;
+
+    function renderProfile(c){
+      var address = [c.address, c.landmark, c.city, c.state, c.postal_code, c.country].filter(Boolean).join(", ") || "<em>Not saved yet</em>";
+      $("#profile-card").innerHTML =
+        '<div class="profile-item"><div class="k">Name</div><div class="v">' + esc(c.full_name || "—") + '</div></div>' +
+        '<div class="profile-item"><div class="k">Phone</div><div class="v">' + esc(c.phone_digits) + '</div></div>' +
+        '<div class="profile-item"><div class="k">Email</div><div class="v">' + esc(c.email || "—") + '</div></div>' +
+        '<div class="profile-item"><div class="k">Delivery address</div><div class="v">' + address + '</div></div>';
+    }
+
+    function fillProfileForm(c){
+      $("#pf-name").value = c.full_name || "";
+      $("#pf-email").value = c.email || "";
+      $("#pf-country").value = c.country || "";
+      $("#pf-phone").value = c.phone_digits || "";
+      $("#pf-address").value = c.address || "";
+      $("#pf-landmark").value = c.landmark || "";
+      $("#pf-postal").value = c.postal_code || "";
+      $("#pf-city").value = c.city || "";
+      $("#pf-state").value = c.state || "";
+    }
+
+    function renderOrders(orders){
+      var host = $("#orders-list");
+      if (!orders.length) {
+        host.innerHTML = '<p style="color:var(--gray,#7a8a80);margin-top:10px;">No orders yet. <a href="/shop.html" style="color:var(--green-mid);">Browse the shop →</a></p>';
+        return;
+      }
+      host.innerHTML = orders.map(function(o){
+        var items = (o.items || []).map(function(i){
+          return '<div class="oi"><span>' + esc(i.quantity) + '× ' + esc(i.product_name) + (i.weight ? ' (' + esc(i.weight) + ')' : '') + '</span><span>' + formatINR((Number(i.price)||0) * (Number(i.quantity)||0)) + '</span></div>';
+        }).join("") || '<div class="oi"><em>no items recorded</em></div>';
+        var status = String(o.status || "pending");
+        return '<div class="order-card">' +
+          '<div class="order-head"><span class="order-id">#CG-' + esc(o.id) + '</span>' +
+          '<span class="status-badge status-' + esc(status) + '">' + esc(status) + '</span></div>' +
+          '<div class="order-date">' + (o.created_at ? new Date(o.created_at).toLocaleString() : "") + (o.is_paid ? ' · <span class="paid-flag">Paid ✓</span>' : ' · <span class="paid-flag">Cash on Delivery</span>') + '</div>' +
+          '<div class="order-items">' + items + '</div>' +
+          '<div class="order-total"><span>Total</span><span>' + formatINR(o.total_price) + '</span></div>' +
+          '</div>';
+      }).join("");
+    }
+
+    async function loadOrders(){
+      try {
+        var r = await fetch("/api/account/orders");
+        if (r.status === 401) { showAuth(); return; }
+        renderOrders(await r.json());
+      } catch (e) {
+        $("#orders-list").innerHTML = '<p style="color:#c0392b;">Could not load orders. Please refresh.</p>';
+      }
+    }
+
+    function showAuth(){
+      customer = null;
+      show($("#auth-view")); hide($("#profile-view"));
+      updateHeaderLink();
+    }
+
+    function showProfile(c){
+      customer = c;
+      hide($("#auth-view")); show($("#profile-view"));
+      hide($("#profile-form"));
+      renderProfile(c);
+      updateHeaderLink();
+      loadOrders();
+    }
+
+    function updateHeaderLink(){
+      var link = document.querySelector('a[href="/account.html"]');
+      if (link && customer) link.textContent = customer.full_name ? customer.full_name.split(" ")[0] : "My Account";
+    }
+
+    async function init(){
+      try {
+        var r = await fetch("/api/account/me");
+        var d = await r.json();
+        if (d.signedIn) showProfile(d.customer); else showAuth();
+      } catch (e) { showAuth(); }
+    }
+
+    // Tabs
+    $("#tab-signin").addEventListener("click", function(){
+      this.classList.add("active"); $("#tab-register").classList.remove("active");
+      this.setAttribute("aria-selected", "true"); $("#tab-register").setAttribute("aria-selected", "false");
+      show($("#login-form")); hide($("#register-form")); hide($("#li-msg"));
+    });
+    $("#tab-register").addEventListener("click", function(){
+      this.classList.add("active"); $("#tab-signin").classList.remove("active");
+      this.setAttribute("aria-selected", "true"); $("#tab-signin").setAttribute("aria-selected", "false");
+      show($("#register-form")); hide($("#login-form")); hide($("#re-msg"));
+    });
+
+    $("#login-form").addEventListener("submit", async function(ev){
+      ev.preventDefault();
+      var btn = $("#li-btn"); btn.disabled = true; btn.textContent = "Signing in…";
+      try {
+        var r = await fetch("/api/account/login", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: $("#li-phone").value, password: $("#li-pass").value }) });
+        var d = await r.json().catch(function(){ return {}; });
+        if (!r.ok || !d.success) throw new Error(d.message || "Sign in failed.");
+        var me = await (await fetch("/api/account/me")).json();
+        showProfile(me.customer);
+        toast("Welcome back!");
+      } catch (e) { msg($("#li-msg"), e.message || "Sign in failed.", true); }
+      finally { btn.disabled = false; btn.textContent = "Sign In"; }
+    });
+
+    $("#register-form").addEventListener("submit", async function(ev){
+      ev.preventDefault();
+      var btn = $("#re-btn"); btn.disabled = true; btn.textContent = "Creating…";
+      try {
+        var r = await fetch("/api/account/register", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ full_name: $("#re-name").value, phone: $("#re-phone").value, email: $("#re-email").value, password: $("#re-pass").value }) });
+        var d = await r.json().catch(function(){ return {}; });
+        if (!r.ok || !d.success) throw new Error(d.message || "Could not create your account.");
+        var me = await (await fetch("/api/account/me")).json();
+        showProfile(me.customer);
+        toast("Account created!");
+      } catch (e) { msg($("#re-msg"), e.message || "Could not create your account.", true); }
+      finally { btn.disabled = false; btn.textContent = "Create Account"; }
+    });
+
+    $("#edit-profile-btn").addEventListener("click", function(){
+      if (customer) fillProfileForm(customer);
+      hide($("#pf-msg")); show($("#profile-form"));
+      $("#pf-name").focus();
+    });
+    $("#pf-cancel-btn").addEventListener("click", function(){ hide($("#profile-form")); hide($("#pf-msg")); });
+
+    $("#profile-form").addEventListener("submit", async function(ev){
+      ev.preventDefault();
+      var btn = $("#pf-save-btn"); btn.disabled = true; btn.textContent = "Saving…";
+      try {
+        var r = await fetch("/api/account/profile", { method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            full_name: $("#pf-name").value, email: $("#pf-email").value, country: $("#pf-country").value,
+            address: $("#pf-address").value, landmark: $("#pf-landmark").value, postal_code: $("#pf-postal").value,
+            city: $("#pf-city").value, state: $("#pf-state").value
+          }) });
+        var d = await r.json().catch(function(){ return {}; });
+        if (!r.ok || !d.success) throw new Error(d.message || "Could not save your profile.");
+        customer = d.customer;
+        renderProfile(customer);
+        hide($("#profile-form"));
+        toast("Profile updated");
+      } catch (e) { msg($("#pf-msg"), e.message || "Could not save your profile.", true); }
+      finally { btn.disabled = false; btn.textContent = "Save Changes"; }
+    });
+
+    $("#logout-btn").addEventListener("click", async function(){
+      await fetch("/api/account/logout", { method: "POST" });
+      showAuth();
+      toast("Signed out");
+    });
+
+    init();
+  })();
+  </script>
+</body>
+</html>

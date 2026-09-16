@@ -28,6 +28,7 @@ export const ORDER_DETAIL_COLUMNS = [
   ['longitude', 'REAL'],
   ['map_link', "TEXT DEFAULT ''"],
   ['payment_method', "TEXT DEFAULT 'cod'"],
+  ['customer_id', 'INTEGER'],
 ];
 
 if (DB_DRIVER === 'postgres') {
@@ -237,6 +238,22 @@ export async function initDatabase() {
       quantity INTEGER DEFAULT 1,
       price REAL DEFAULT 0,
       FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS customers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      phone_digits TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      full_name TEXT DEFAULT '',
+      email TEXT DEFAULT '',
+      address TEXT DEFAULT '',
+      landmark TEXT DEFAULT '',
+      city TEXT DEFAULT '',
+      state TEXT DEFAULT '',
+      postal_code TEXT DEFAULT '',
+      country TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS testimonials (

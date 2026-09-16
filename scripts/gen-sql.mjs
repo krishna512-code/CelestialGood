@@ -106,6 +106,7 @@ CREATE TABLE IF NOT EXISTS orders (
   longitude REAL,
   map_link TEXT DEFAULT '',
   payment_method TEXT DEFAULT 'cod',
+  customer_id INTEGER,
   total_price REAL DEFAULT 0,
   is_paid INTEGER DEFAULT 0,
   status TEXT DEFAULT 'pending',
@@ -120,6 +121,22 @@ CREATE TABLE IF NOT EXISTS order_items (
   weight TEXT DEFAULT '',
   quantity INTEGER DEFAULT 1,
   price REAL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS customers (
+  id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  phone_digits TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  full_name TEXT DEFAULT '',
+  email TEXT DEFAULT '',
+  address TEXT DEFAULT '',
+  landmark TEXT DEFAULT '',
+  city TEXT DEFAULT '',
+  state TEXT DEFAULT '',
+  postal_code TEXT DEFAULT '',
+  country TEXT DEFAULT '',
+  notes TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS testimonials (
@@ -175,7 +192,7 @@ DO $$
 DECLARE t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY['categories','sizes','colors','billboards','products',
-                           'images','orders','order_items','testimonials','faq',
+                           'images','orders','order_items','customers','testimonials','faq',
                            'site_settings','admin_users']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
