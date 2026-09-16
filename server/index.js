@@ -38,9 +38,24 @@ app.use((req, res, next) => {
       const match = cookie.match(/session=([^;]+)/);
       if (match) {
         // res.cookie percent-encodes base64 padding — decode before parsing
-        const data = JSON.parse(Buffer.from(decodeURIComponent(match[1]), 'base64').toString());
-        if (data && data.expiry > Date.now()) {
-          req.session = data;
+        const raw = Buffer.from(decodeURIComponent(match[1]), 'base64').toString();
+        try {
+          const data = JSON.parse(raw);
+          if (data && data.expiry > Date.now()) {
+            req.session = data;
+          }
+        } catch {
+          // Not JSON: logging in through Supabase auth stores the raw access
+          // token (JWT) in the cookie. Accept it as a session marker so
+          // requireAuth-protected routes work — previously every save returned
+          // 401 "Unauthorized. Please login." for Supabase-authenticated admins.
+          if (raw.includes('.')) {
+            try {
+              const payload = JSON.parse(Buffer.from(raw.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString());
+              const expiry = payload.exp ? payload.exp * 1000 : Date.now() + 86400000;
+              if (expiry > Date.now()) req.session = { token: raw, expiry };
+            } catch {}
+          }
         }
       }
     } catch {}
@@ -51,6 +66,18 @@ app.use((req, res, next) => {
 function requireAuth(req, res, next) {
   if (req.session && (req.session.userId || req.session.token)) return next();
   res.status(401).json({ error: 'Unauthorized. Please login.' });
+}
+
+// Parse the session cookie once for any handler that needs the raw token
+// (JWT) or payload — shared by /api/admin/me and change-password.
+function getSession(req) {
+  const match = (req.headers.cookie || '').match(/session=([^;]+)/);
+  if (!match) return null;
+  try {
+    return { raw: Buffer.from(decodeURIComponent(match[1]), 'base64').toString() };
+  } catch {
+    return null;
+  }
 }
 
 // Diagnostic endpoint: reports driver + exact DB connectivity error details.
@@ -100,11 +127,9 @@ app.post('/api/admin/logout', (req, res) => {
 });
 
 app.get('/api/admin/me', async (req, res) => {
-  const cookie = req.headers.cookie;
-  if (!cookie) return res.status(401).json({ loggedIn: false });
-  const match = cookie.match(/session=([^;]+)/);
-  if (!match) return res.status(401).json({ loggedIn: false });
-  const token = Buffer.from(decodeURIComponent(match[1]), 'base64').toString();
+  const sess = getSession(req);
+  if (!sess) return res.status(401).json({ loggedIn: false });
+  const token = sess.raw;
   // Local-admin cookies carry a JSON payload; Supabase cookies carry a JWT.
   try {
     const payload = JSON.parse(token);

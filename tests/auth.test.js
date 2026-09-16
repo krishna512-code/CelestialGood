@@ -40,6 +40,30 @@ describe('Admin Authentication', () => {
       .expect(401);
   });
 
+  test('a Supabase-JWT-shaped session cookie grants access to protected routes', async () => {
+    // Regression: logging in through Supabase auth stored the raw JWT in the
+    // session cookie. /api/admin/me accepted it, but requireAuth only
+    // understood JSON payloads — so every admin save returned 401.
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify({ sub: 'user-123', exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url');
+    const jwt = header + '.' + payload + '.fake-signature';
+    const cookie = 'session=' + encodeURIComponent(Buffer.from(jwt).toString('base64'));
+
+    const res = await request(app)
+      .get('/api/dashboard/stats')
+      .set('Cookie', cookie)
+      .expect(200);
+    expect(res.body).toHaveProperty('totalRevenue');
+
+    // An expired JWT must NOT grant access
+    const expiredPayload = Buffer.from(JSON.stringify({ sub: 'user-123', exp: Math.floor(Date.now() / 1000) - 60 })).toString('base64url');
+    const expiredCookie = 'session=' + encodeURIComponent(Buffer.from(header + '.' + expiredPayload + '.fake-signature').toString('base64'));
+    await request(app)
+      .get('/api/dashboard/stats')
+      .set('Cookie', expiredCookie)
+      .expect(401);
+  });
+
   test('Authenticated request to protected route succeeds', async () => {
     const loginRes = await request(app)
       .post('/api/admin/login')
