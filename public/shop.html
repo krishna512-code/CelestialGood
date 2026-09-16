@@ -436,7 +436,7 @@
       var shortDescription = product.short_desc || compactText(fullDescription, 145);
       var needsToggle = fullDescription && fullDescription.length > shortDescription.length + 12;
       var imageMarkup = product.image_url
-        ? '<div class="product-visual"><img src="' + escapeHTML(product.image_url) + '" alt="' + escapeHTML(product.name) + '" loading="lazy"></div>'
+        ? '<div class="product-visual"><img src="' + escapeHTML(product.image_url) + '" alt="' + escapeHTML(product.name) + '" loading="lazy" decoding="async" width="600" height="450"></div>'
         : '<div class="product-visual art-bg"><span class="art-emoji">' + escapeHTML((product.category_name || "").includes("Makhana") ? "🥜" : "🏺") + '</span></div>';
       var productId = String(product.id);
       var slug = product.slug || slugFromName(product.name);

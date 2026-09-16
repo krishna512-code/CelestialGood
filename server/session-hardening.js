@@ -156,7 +156,11 @@ export function asyncRoute(fn) {
 }
 
 export function errorHandler(err, req, res, _next) {
+  const status = (err && err.status) || 500;
   console.error(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ->`, err && (err.stack || err.message || err));
   if (res.headersSent) return;
-  res.status(err && err.status ? err.status : 500).json({ error: 'Internal server error.' });
+  // Client errors (bad JSON, oversized body, bad upload) get the real reason;
+  // server errors stay generic so internals never leak.
+  const message = status < 500 && err && err.message ? err.message : 'Internal server error.';
+  res.status(status).json({ error: message });
 }
