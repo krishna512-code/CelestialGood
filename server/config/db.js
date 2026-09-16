@@ -74,12 +74,13 @@ async function ensurePgMigrated() {
   if (pgMigrated) return;
   // Security migration first: creates the customers table if missing (a real
   // production gap this fixes) and applies RLS/EXECUTE lockdowns. Failure is
-  // logged but never blocks serving — worst case is the pre-existing state.
+  // logged but never blocks serving — the module stays unapplied and retries
+  // on the next request until it succeeds.
   try {
     const { ensureSecurityMigration } = await import('../pg-security-migration.js');
     await ensureSecurityMigration();
   } catch (e) {
-    console.error('[pg-security-migration] failed:', e.message);
+    console.error('[pg-security-migration] failed (will retry):', e.message);
   }
   for (const [col, def] of ORDER_DETAIL_COLUMNS) {
     await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ${col} ${def}`);

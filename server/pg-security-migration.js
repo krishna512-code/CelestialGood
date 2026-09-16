@@ -67,9 +67,15 @@ const STATEMENTS = [
 let applied = false;
 export async function ensureSecurityMigration() {
   if (applied) return;
-  applied = true; // set first: a half-applied run retries on the next request
   const pool = getPool();
-  for (const sql of STATEMENTS) {
-    await pool.query(sql);
+  try {
+    for (const sql of STATEMENTS) {
+      await pool.query(sql);
+    }
+    applied = true;
+  } catch (e) {
+    // Stay unapplied: the set is idempotent, so the next request retries —
+    // a partially-applied run (e.g. one statement erroring) self-heals.
+    throw e;
   }
 }
