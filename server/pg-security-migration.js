@@ -55,13 +55,13 @@ const STATEMENTS = [
   //    policy states the intent (and keeps the advisor's no-policy lint
   //    quiet). The app connects with the direct service connection, which
   //    bypasses RLS — matching scripts/migrate-pg.mjs's service_role model.
-  ...APP_TABLES.map((t) => `DO $$
+  ...APP_TABLES.map((t) => `DO $do$
    BEGIN
      IF NOT EXISTS (SELECT 1 FROM pg_policies
                     WHERE schemaname = 'public' AND tablename = '${t}' AND policyname = 'deny_anon_all') THEN
        EXECUTE $$CREATE POLICY deny_anon_all ON public.${t} FOR ALL TO anon, authenticated USING (false) WITH CHECK (false)$$;
      END IF;
-   END $$`),
+   END $do$`),
 ];
 
 let applied = false;
