@@ -309,7 +309,9 @@ export async function initDatabase() {
       whatsapp_number TEXT,
       email TEXT,
       footer_description TEXT,
-      copyright_text TEXT
+      copyright_text TEXT,
+      ga4_measurement_id TEXT,
+      fb_pixel_id TEXT
     );
 
     CREATE TABLE IF NOT EXISTS admin_users (
@@ -328,6 +330,10 @@ export async function initDatabase() {
   for (const [col, def] of ORDER_DETAIL_COLUMNS) {
     try { sqlite.exec(`ALTER TABLE orders ADD COLUMN ${col} ${def}`); } catch {}
   }
+
+  // Migration for DBs created before analytics IDs existed (cookie-consent-gated)
+  try { sqlite.exec("ALTER TABLE site_settings ADD COLUMN ga4_measurement_id TEXT"); } catch {}
+  try { sqlite.exec("ALTER TABLE site_settings ADD COLUMN fb_pixel_id TEXT"); } catch {}
 
   // Optional Owner Bootstrap via environment variables
   if (process.env.OWNER_USERNAME && process.env.OWNER_PASSWORD) {
@@ -349,8 +355,8 @@ export async function initDatabase() {
   };
 
   seedIfEmpty('site_settings',
-    'INSERT OR IGNORE INTO site_settings (id, hero_title, hero_subtitle, hero_description, announcement_text, whatsapp_number, email, footer_description, copyright_text) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [[settingsDefaults.hero_title, settingsDefaults.hero_subtitle, settingsDefaults.hero_description, settingsDefaults.announcement_text, settingsDefaults.whatsapp_number, settingsDefaults.email, settingsDefaults.footer_description, settingsDefaults.copyright_text]]);
+    'INSERT OR IGNORE INTO site_settings (id, hero_title, hero_subtitle, hero_description, announcement_text, whatsapp_number, email, footer_description, copyright_text, ga4_measurement_id, fb_pixel_id) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [[settingsDefaults.hero_title, settingsDefaults.hero_subtitle, settingsDefaults.hero_description, settingsDefaults.announcement_text, settingsDefaults.whatsapp_number, settingsDefaults.email, settingsDefaults.footer_description, settingsDefaults.copyright_text, settingsDefaults.ga4_measurement_id, settingsDefaults.fb_pixel_id]]);
 
   seedIfEmpty('categories',
     'INSERT INTO categories (id, name, slug, icon, description, sort_order) VALUES (?, ?, ?, ?, ?, ?)',

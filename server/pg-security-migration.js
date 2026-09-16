@@ -36,6 +36,11 @@ const STATEMENTS = [
      created_at TIMESTAMPTZ DEFAULT now()
    )`,
 
+  // 0b) Analytics IDs for DBs created before they existed (admin-managed,
+  //      served via /api/settings, loaded only after cookie consent).
+  `ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS ga4_measurement_id TEXT`,
+  `ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS fb_pixel_id TEXT`,
+
   // 1) Lock down the stray SECURITY DEFINER function the advisor flagged.
   `DO $$
    BEGIN

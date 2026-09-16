@@ -87,6 +87,8 @@
         <label>Email</label><input type="text" id="set-email" placeholder="Email">
         <label>Footer Description</label><textarea id="set-footer_description" placeholder="Footer description"></textarea>
         <label>Copyright Text</label><input type="text" id="set-copyright_text" placeholder="Copyright">
+        <label>GA4 Measurement ID</label><input type="text" id="set-ga4_measurement_id" placeholder="G-XXXXXXXXXX (leave empty to disable)">
+        <label>Facebook Pixel ID</label><input type="text" id="set-fb_pixel_id" placeholder="e.g. 123456789012345 (leave empty to disable)">
         <button class="admin-btn" onclick="saveSettings()">Save Settings</button>
       </div>
     </div>
@@ -252,6 +254,8 @@
       document.getElementById('set-email').value = settings.email || '';
       document.getElementById('set-footer_description').value = settings.footer_description || '';
       document.getElementById('set-copyright_text').value = settings.copyright_text || '';
+      document.getElementById('set-ga4_measurement_id').value = settings.ga4_measurement_id || '';
+      document.getElementById('set-fb_pixel_id').value = settings.fb_pixel_id || '';
       
       const [cats, prods, bans, tests, faqs] = await Promise.all([
         fetch('/api/categories').then(r => r.json()),
@@ -287,7 +291,7 @@
     
     async function saveSettings() {
       const data = {};
-      ['hero_title','hero_subtitle','hero_description','announcement_text','whatsapp_number','email','footer_description','copyright_text'].forEach(k => data[k] = document.getElementById('set-'+k).value);
+      ['hero_title','hero_subtitle','hero_description','announcement_text','whatsapp_number','email','footer_description','copyright_text','ga4_measurement_id','fb_pixel_id'].forEach(k => data[k] = document.getElementById('set-'+k).value);
       await api('/api/settings', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }, 'Settings saved!');
     }
     

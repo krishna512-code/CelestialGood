@@ -170,7 +170,9 @@ CREATE TABLE IF NOT EXISTS site_settings (
   whatsapp_number TEXT,
   email TEXT,
   footer_description TEXT,
-  copyright_text TEXT
+  copyright_text TEXT,
+  ga4_measurement_id TEXT,
+  fb_pixel_id TEXT
 );
 
 CREATE TABLE IF NOT EXISTS admin_users (
@@ -257,9 +259,9 @@ async function main() {
     };
 
     await seed('site_settings',
-      `INSERT INTO site_settings (id, hero_title, hero_subtitle, hero_description, announcement_text, whatsapp_number, email, footer_description, copyright_text)
+      `INSERT INTO site_settings (id, hero_title, hero_subtitle, hero_description, announcement_text, whatsapp_number, email, footer_description, copyright_text, ga4_measurement_id, fb_pixel_id)
        OVERRIDING SYSTEM VALUE VALUES (1, $1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO NOTHING`,
-      [[settingsDefaults.hero_title, settingsDefaults.hero_subtitle, settingsDefaults.hero_description, settingsDefaults.announcement_text, settingsDefaults.whatsapp_number, settingsDefaults.email, settingsDefaults.footer_description, settingsDefaults.copyright_text]]);
+      [[settingsDefaults.hero_title, settingsDefaults.hero_subtitle, settingsDefaults.hero_description, settingsDefaults.announcement_text, settingsDefaults.whatsapp_number, settingsDefaults.email, settingsDefaults.footer_description, settingsDefaults.copyright_text, settingsDefaults.ga4_measurement_id, settingsDefaults.fb_pixel_id]]);
 
     await seed('categories',
       `INSERT INTO categories (id,name,slug,icon,description,sort_order) OVERRIDING SYSTEM VALUE VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (id) DO NOTHING`,

@@ -391,9 +391,10 @@ app.put('/api/settings', requireAuth, async (req, res) => {
   const s = req.body || {};
   await run(
     `UPDATE site_settings SET hero_title=?, hero_subtitle=?, hero_description=?, announcement_text=?,
-     whatsapp_number=?, email=?, footer_description=?, copyright_text=? WHERE id=1`,
+     whatsapp_number=?, email=?, footer_description=?, copyright_text=?, ga4_measurement_id=?, fb_pixel_id=? WHERE id=1`,
     [s.hero_title, s.hero_subtitle, s.hero_description, s.announcement_text,
-     s.whatsapp_number, s.email, s.footer_description, s.copyright_text]
+     s.whatsapp_number, s.email, s.footer_description, s.copyright_text,
+     s.ga4_measurement_id, s.fb_pixel_id]
   );
   res.json({ success: true, message: 'Settings saved.' });
 });

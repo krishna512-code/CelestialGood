@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /account.html
+Disallow: /uploads/
+
+Sitemap: https://www.celestialgood.com/sitemap.xml

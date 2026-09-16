@@ -12,6 +12,8 @@ export const settingsDefaults = {
   footer_description:
     'Pure, organic, and traditionally made delicacies — sourced directly from Indian farmers and delivered to your doorstep.',
   copyright_text: '2026 Celestial Good. All rights reserved.',
+  ga4_measurement_id: '',
+  fb_pixel_id: '',
 };
 
 export const categories = [
