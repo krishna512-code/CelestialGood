@@ -40,6 +40,36 @@ describe('Admin Authentication', () => {
       .expect(401);
   });
 
+  test('admin and customer sessions use separate cookies (no overwrite)', async () => {
+    // Cookie names must differ — a customer sign-in used to clobber the admin
+    // session on the same device, 401-ing every admin save.
+    const adminRes = await request(app)
+      .post('/api/admin/login')
+      .send({ username: ADMIN_USER.username, password: ADMIN_USER.password })
+      .expect(200);
+    const adminCookie = adminRes.headers['set-cookie'].find(c => c.startsWith('session='));
+    const custRes = await request(app)
+      .post('/api/account/register')
+      .send({ full_name: 'Cookie Test', phone: '+44 7666 444333', password: 'Password123!' })
+      .expect(200);
+    const custCookie = custRes.headers['set-cookie'].find(c => c.startsWith('customer_session='));
+
+    expect(adminCookie).toBeDefined();
+    expect(custCookie).toBeDefined();
+
+    // Both sessions valid simultaneously on the same cookie jar
+    const jar = [adminCookie.split(';')[0], custCookie.split(';')[0]].join('; ');
+    await request(app).get('/api/admin/me').set('Cookie', jar).expect(200);
+    await request(app).get('/api/account/me').set('Cookie', jar).expect(200);
+
+    // Customer logout clears only its own cookie
+    const out = await request(app).post('/api/account/logout').set('Cookie', jar).expect(200);
+    expect(out.headers['set-cookie'].join(' ')).toMatch(/customer_session=;/);
+    await request(app).get('/api/admin/me').set('Cookie', jar).expect(200);
+
+    await run('DELETE FROM customers WHERE phone_digits = ?', ['447666444333']);
+  });
+
   test('customer accounts: international register, login, profile edit, and phone-matched order history', async () => {
     const ukPhone = '+44 7911 123456';
     const bareDigits = '447911123456';

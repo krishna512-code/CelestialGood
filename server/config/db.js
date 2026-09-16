@@ -98,6 +98,12 @@ function toPgSql(sql) {
   return placeholders.replace(/\bLIKE\b/g, 'ILIKE');
 }
 
+// node:sqlite THROWS (ERR_INVALID_ARG_TYPE) when a bind value is `undefined`.
+// Handlers bind request-body fields directly, so an omitted field used to crash
+// the whole process (unhandled rejection from an async handler). Postgres
+// treats undefined as NULL, so normalize for parity: undefined -> null.
+const safeParams = (params) => params.map((p) => (p === undefined ? null : p));
+
 /** Run a SELECT; resolves to an array of row objects. */
 export async function query(sql, params = []) {
   if (DB_DRIVER === 'postgres') {
@@ -105,7 +111,7 @@ export async function query(sql, params = []) {
     const r = await pool.query(toPgSql(sql), params);
     return r.rows;
   }
-  return sqlite.prepare(sql).all(...params);
+  return sqlite.prepare(sql).all(...safeParams(params));
 }
 
 /** Run a SELECT expected to return at most one row; resolves to the row or null. */
@@ -125,7 +131,7 @@ export async function run(sql, params = []) {
     const r = await pool.query(pgSql, params);
     return { changes: r.rowCount, lastId: r.rows[0]?.id ?? null };
   }
-  const r = sqlite.prepare(sql).run(...params);
+  const r = sqlite.prepare(sql).run(...safeParams(params));
   return { changes: r.changes, lastId: r.lastInsertRowid };
 }
 

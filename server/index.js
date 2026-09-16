@@ -35,7 +35,7 @@ app.use((req, res, next) => {
   const cookie = req.headers.cookie;
   if (cookie) {
     try {
-      const match = cookie.match(/session=([^;]+)/);
+      const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
       if (match) {
         // res.cookie percent-encodes base64 padding — decode before parsing
         const raw = Buffer.from(decodeURIComponent(match[1]), 'base64').toString();
@@ -58,9 +58,20 @@ app.use((req, res, next) => {
           }
         }
         if (req.session && req.session.customerId) {
-          // Customer (storefront) session — separate from admin auth.
+          // Legacy customer sessions (pre-cookie-split) lived in `session`.
           req.account = { customerId: req.session.customerId };
         }
+      }
+    } catch {}
+  }
+  // Customer sessions use their own cookie so signing into the storefront
+  // never overwrites the admin session (and vice versa).
+  const custMatch = cookie && cookie.match(/(?:^|;\s*)customer_session=([^;]+)/);
+  if (custMatch) {
+    try {
+      const cdata = JSON.parse(Buffer.from(decodeURIComponent(custMatch[1]), 'base64').toString());
+      if (cdata && cdata.customerId && cdata.expiry > Date.now()) {
+        req.account = { customerId: cdata.customerId };
       }
     } catch {}
   }
@@ -81,7 +92,7 @@ function requireCustomer(req, res, next) {
 // Parse the session cookie once for any handler that needs the raw token
 // (JWT) or payload — shared by /api/admin/me and change-password.
 function getSession(req) {
-  const match = (req.headers.cookie || '').match(/session=([^;]+)/);
+  const match = (req.headers.cookie || '').match(/(?:^|;\s*)session=([^;]+)/);
   if (!match) return null;
   try {
     return { raw: Buffer.from(decodeURIComponent(match[1]), 'base64').toString() };
@@ -220,7 +231,7 @@ app.post('/api/account/register', async (req, res) => {
     [key, hashPassword(password), full_name, text(b.email, 160)]
   );
   const encoded = Buffer.from(JSON.stringify({ customerId: r.lastId, expiry: Date.now() + 30 * 86400000 })).toString('base64');
-  res.cookie('session', encoded, { httpOnly: true, maxAge: 30 * 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
+  res.cookie('customer_session', encoded, { httpOnly: true, maxAge: 30 * 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
   res.json({ success: true, customer: { id: r.lastId, phone: key, full_name } });
 });
 
@@ -232,12 +243,12 @@ app.post('/api/account/login', async (req, res) => {
     return res.status(401).json({ success: false, message: 'Phone number or password is incorrect.' });
   }
   const encoded = Buffer.from(JSON.stringify({ customerId: customer.id, expiry: Date.now() + 30 * 86400000 })).toString('base64');
-  res.cookie('session', encoded, { httpOnly: true, maxAge: 30 * 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
+  res.cookie('customer_session', encoded, { httpOnly: true, maxAge: 30 * 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
   res.json({ success: true, customer: { id: customer.id, phone: customer.phone_digits, full_name: customer.full_name } });
 });
 
 app.post('/api/account/logout', (req, res) => {
-  res.clearCookie('session');
+  res.clearCookie('customer_session');
   res.json({ success: true });
 });
 

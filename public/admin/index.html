@@ -184,12 +184,16 @@
       return /^https?:\/\//i.test(s) ? s : '#';
     }
 
-    // Shared API helper: shows the server's error instead of a fake success toast
+    // Shared API helper: shows the server's error instead of a fake success toast.
+    // A 401 means the session is gone (e.g. expired, or replaced by a customer
+    // sign-in on this device) — flip back to the login screen instead of
+    // letting the user keep editing a panel that can no longer save.
     async function api(url, options, okMsg) {
       const r = await fetch(url, options);
       if (!r.ok) {
         let msg = 'Save failed (' + r.status + ')';
         try { const j = await r.json(); if (j.error) msg = j.error; } catch (e) {}
+        if (r.status === 401) { showLogin(); }
         showToast('⚠️ ' + msg);
         throw new Error(msg);
       }
