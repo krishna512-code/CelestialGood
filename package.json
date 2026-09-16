@@ -11,7 +11,7 @@
     "start": "node server/index.js",
     "dev": "node server/index.js",
     "migrate:pg": "node scripts/migrate-pg.mjs",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand"
+    "test": "NODE_OPTIONS=--experimental-vm-modules DISABLE_RATE_LIMIT=1 jest --runInBand"
   },
   "jest": {
     "testEnvironment": "node",

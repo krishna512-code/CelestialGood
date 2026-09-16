@@ -1,6 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "trailingSlash": false,
+  "env": {
+    "TRUST_PROXY": "1"
+  },
   "builds": [
     {
       "src": "api/[...path].js",

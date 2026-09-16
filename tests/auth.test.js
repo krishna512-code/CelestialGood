@@ -159,28 +159,86 @@ describe('Admin Authentication', () => {
     await run('DELETE FROM customers WHERE phone_digits IN (?, ?)', [bareDigits, inDigits]);
   });
 
-  test('a Supabase-JWT-shaped session cookie grants access to protected routes', async () => {
-    // Regression: logging in through Supabase auth stored the raw JWT in the
-    // session cookie. /api/admin/me accepted it, but requireAuth only
-    // understood JSON payloads — so every admin save returned 401.
+  test('a Supabase-JWT-shaped session cookie does NOT grant access without verification', async () => {
+    // Security regression guard: requireAuth used to trust the mere PRESENCE
+    // of a JWT-shaped cookie — a fabricated token granted full admin
+    // (confirmed exploitable in production). It must now be verified
+    // server-side; a fabricated signature is rejected.
     const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
     const payload = Buffer.from(JSON.stringify({ sub: 'user-123', exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url');
     const jwt = header + '.' + payload + '.fake-signature';
     const cookie = 'session=' + encodeURIComponent(Buffer.from(jwt).toString('base64'));
 
-    const res = await request(app)
-      .get('/api/dashboard/stats')
-      .set('Cookie', cookie)
-      .expect(200);
-    expect(res.body).toHaveProperty('totalRevenue');
-
-    // An expired JWT must NOT grant access
-    const expiredPayload = Buffer.from(JSON.stringify({ sub: 'user-123', exp: Math.floor(Date.now() / 1000) - 60 })).toString('base64url');
-    const expiredCookie = 'session=' + encodeURIComponent(Buffer.from(header + '.' + expiredPayload + '.fake-signature').toString('base64'));
     await request(app)
       .get('/api/dashboard/stats')
-      .set('Cookie', expiredCookie)
+      .set('Cookie', cookie)
       .expect(401);
+  });
+
+  test('unsigned and tampered session cookies are rejected (HMAC enforcement)', async () => {
+    // Pre-hardening forge: plain base64 JSON with no signature at all.
+    const legacy = Buffer.from(JSON.stringify({ userId: 1, expiry: Date.now() + 3600_000 })).toString('base64');
+    await request(app).get('/api/dashboard/stats').set('Cookie', 'session=' + encodeURIComponent(legacy)).expect(401);
+
+    // Tampered payload: take a legitimately signed cookie and change the body.
+    const { signValue, verifyValue } = await import('../server/session-hardening.js');
+    const signed = signValue({ userId: 1, expiry: Date.now() + 3600_000 });
+    const [payloadB64] = signed.split('.');
+    const forgedObj = JSON.parse(Buffer.from(payloadB64, 'base64').toString());
+    forgedObj.userId = 999;
+    const tampered = Buffer.from(JSON.stringify(forgedObj)).toString('base64') + '.' + signed.split('.')[1];
+    expect(verifyValue(tampered)).toBeNull();
+
+    // A validly signed customer cookie still verifies.
+    expect(verifyValue(signValue({ customerId: 42, expiry: Date.now() + 60_000 }))).toMatchObject({ customerId: 42 });
+  });
+
+  test('rate limiting blocks request floods on public endpoints', async () => {
+    // Enabled directly (the suite disables the limiter globally via env).
+    const { rateLimit } = await import('../server/session-hardening.js');
+    const express = (await import('express')).default;
+    // The suite runs with DISABLE_RATE_LIMIT=1 (so fixture traffic isn't
+    // throttled); re-enable it for this test only.
+    const prevFlag = process.env.DISABLE_RATE_LIMIT;
+    delete process.env.DISABLE_RATE_LIMIT;
+    try {
+      const mini = express();
+      mini.use(express.json());
+      mini.post('/hit', rateLimit({ windowMs: 60_000, max: 3, keyBy: (req) => String(req.body?.phone ?? '') }), (_req, res) => res.json({ ok: true }));
+      mini.use((err, _req, res, _next) => res.status(500).json({ error: String(err) }));
+
+      for (let i = 0; i < 3; i++) {
+        await request(mini).post('/hit').send({ phone: '999' }).expect(200);
+      }
+      const r4 = await request(mini).post('/hit').send({ phone: '999' });
+      expect(r4.status).toBe(429);
+      expect(r4.headers['retry-after']).toBeDefined();
+      // A different identity (keyBy) gets its own budget.
+      await request(mini).post('/hit').send({ phone: '888' }).expect(200);
+      // And a limited method mix: only POST counts when methods is set.
+      const mini2 = express();
+      mini2.use(express.json());
+      mini2.post('/x', rateLimit({ max: 1, methods: ['POST'] }), (_q, res) => res.json({ ok: true }));
+      mini2.get('/x', (_q, res) => res.json({ ok: true }));
+      await request(mini2).post('/x').expect(200);
+      await request(mini2).get('/x').expect(200); // GET untouched
+      await request(mini2).post('/x').expect(429);
+    } finally {
+      if (prevFlag !== undefined) process.env.DISABLE_RATE_LIMIT = prevFlag;
+    }
+  });
+
+  test('async handler rejections return 500 JSON instead of crashing the process', async () => {
+    // Inject a route that always throws; the wrapper must convert it to a 500
+    // and the server must keep serving afterwards.
+    const { asyncRoute } = await import('../server/session-hardening.js');
+    const express = (await import('express')).default;
+    const mini = express();
+    mini.get('/boom', asyncRoute(async () => { throw new Error('boom'); }));
+    mini.use((err, _req, res, _next) => res.status(500).json({ error: 'Internal server error.' }));
+    await request(mini).get('/boom').expect(500, { error: 'Internal server error.' });
+    // And the REAL app is still healthy after everything above.
+    await request(app).get('/api/health').expect(200);
   });
 
   test('Authenticated request to protected route succeeds', async () => {

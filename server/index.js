@@ -8,10 +8,20 @@ import { hashPassword, verifyPassword } from './middleware/auth.js';
 import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
+import { signValue, verifyValue, rateLimit, asyncRoute, errorHandler, clientIp } from './session-hardening.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const IS_PROD = process.env.NODE_ENV === 'production';
 const app = express();
+
+// Express 4 does not catch rejected promises from async handlers — one bad
+// request used to become an unhandled rejection that KILLED the process.
+// Wrap every route handler so rejections flow to the global error handler.
+for (const method of ['get', 'post', 'put', 'delete', 'patch']) {
+  const orig = app[method].bind(app);
+  app[method] = (path, ...handlers) =>
+    orig(path, ...handlers.map((h) => (typeof h === 'function' ? asyncRoute(h) : h)));
+}
 // "0" (or empty) PORT strings are truthy but not a usable port — fall back.
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 5050;
 
@@ -30,47 +40,32 @@ if (DB_DRIVER === 'sqlite') {
   app.use(express.static(join(__dirname, '..', 'public'), { maxAge: '1d' }));
 }
 
-// Cookie-based session (stateless: payload + expiry encoded in the cookie)
+// Cookie-based sessions. Both cookies are HMAC-signed (payload.signature) —
+// an unsigned/forged cookie fails verification and is treated as absent.
 app.use((req, res, next) => {
   const cookie = req.headers.cookie;
   if (cookie) {
-    try {
-      const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
-      if (match) {
-        // res.cookie percent-encodes base64 padding — decode before parsing
-        const raw = Buffer.from(decodeURIComponent(match[1]), 'base64').toString();
-        try {
-          const data = JSON.parse(raw);
-          if (data && data.expiry > Date.now()) {
-            req.session = data;
-          }
-        } catch {
-          // Not JSON: logging in through Supabase auth stores the raw access
-          // token (JWT) in the cookie. Accept it as a session marker so
-          // requireAuth-protected routes work — previously every save returned
-          // 401 "Unauthorized. Please login." for Supabase-authenticated admins.
-          if (raw.includes('.')) {
-            try {
-              const payload = JSON.parse(Buffer.from(raw.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString());
-              const expiry = payload.exp ? payload.exp * 1000 : Date.now() + 86400000;
-              if (expiry > Date.now()) req.session = { token: raw, expiry };
-            } catch {}
-          }
+    const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
+    if (match) {
+      try {
+        const data = verifyValue(decodeURIComponent(match[1]));
+        // data.token marks a Supabase-authenticated admin login; userId marks
+        // a local admin_users login. Either satisfies requireAuth.
+        if (data && (data.userId || data.token)) {
+          req.session = data;
+          // Legacy marker: customer sessions briefly lived in `session`.
+          if (data.customerId) req.account = { customerId: data.customerId };
         }
-        if (req.session && req.session.customerId) {
-          // Legacy customer sessions (pre-cookie-split) lived in `session`.
-          req.account = { customerId: req.session.customerId };
-        }
-      }
-    } catch {}
+      } catch {}
+    }
   }
   // Customer sessions use their own cookie so signing into the storefront
   // never overwrites the admin session (and vice versa).
   const custMatch = cookie && cookie.match(/(?:^|;\s*)customer_session=([^;]+)/);
   if (custMatch) {
     try {
-      const cdata = JSON.parse(Buffer.from(decodeURIComponent(custMatch[1]), 'base64').toString());
-      if (cdata && cdata.customerId && cdata.expiry > Date.now()) {
+      const cdata = verifyValue(decodeURIComponent(custMatch[1]));
+      if (cdata && cdata.customerId) {
         req.account = { customerId: cdata.customerId };
       }
     } catch {}
@@ -78,9 +73,33 @@ app.use((req, res, next) => {
   next();
 });
 
-function requireAuth(req, res, next) {
-  if (req.session && (req.session.userId || req.session.token)) return next();
-  res.status(401).json({ error: 'Unauthorized. Please login.' });
+const requireAuth = asyncRoute(async (req, res, next) => {
+  if (!req.session) return res.status(401).json({ error: 'Unauthorized. Please login.' });
+  if (req.session.userId) return next(); // local admin — HMAC already verified
+  if (req.session.token) {
+    // Supabase-issued JWT — verify it against Supabase (cached).
+    if (await supabaseTokenValid(req.session.token)) return next();
+    return res.status(401).json({ error: 'Unauthorized. Please login.' });
+  }
+  return res.status(401).json({ error: 'Unauthorized. Please login.' });
+});
+
+// Supabase JWT verification with a 1h positive cache (avoids a Supabase
+// round-trip on every admin request). Fails closed on any error.
+const supabaseTokenCache = new Map(); // token -> { ok, until }
+async function supabaseTokenValid(token) {
+  const hit = supabaseTokenCache.get(token);
+  if (hit && hit.until > Date.now()) return hit.ok;
+  let ok = false;
+  try {
+    const { data, error } = await supabase.auth.getUser(token);
+    ok = !error && !!data?.user;
+  } catch {
+    ok = false; // fail closed: unverifiable token grants nothing
+  }
+  supabaseTokenCache.set(token, { ok, until: Date.now() + 3600_000 });
+  if (supabaseTokenCache.size > 500) supabaseTokenCache.clear();
+  return ok;
 }
 
 // Guard for customer-account routes (storefront, not admin).
@@ -89,13 +108,15 @@ function requireCustomer(req, res, next) {
   res.status(401).json({ error: 'Please sign in to continue.' });
 }
 
-// Parse the session cookie once for any handler that needs the raw token
-// (JWT) or payload — shared by /api/admin/me and change-password.
+// Signed-session variant for handlers that need the raw token (JWT) or
+// payload — shared by /api/admin/me and change-password.
 function getSession(req) {
   const match = (req.headers.cookie || '').match(/(?:^|;\s*)session=([^;]+)/);
   if (!match) return null;
   try {
-    return { raw: Buffer.from(decodeURIComponent(match[1]), 'base64').toString() };
+    const data = verifyValue(decodeURIComponent(match[1]));
+    if (!data) return null;
+    return { raw: data.token || Buffer.from(JSON.stringify(data)).toString(), payload: data };
   } catch {
     return null;
   }
@@ -117,6 +138,20 @@ app.get('/api/health', async (req, res) => {
 });
 
 // ==========================================
+// RATE LIMITING (public endpoints — spam orders, credential stuffing)
+// ==========================================
+// TRUST_PROXY=1 is set in vercel.json; behind it Express's req.ip is already
+// the real client, but clientIp() reads the forwarded header directly anyway.
+const strictLimit = rateLimit({ windowMs: 60_000, max: 5, keyBy: (req) => String(req.body?.phone ?? req.body?.username ?? '') });
+const orderLimit = rateLimit({ windowMs: 60_000, max: 5, keyBy: (req) => String(req.body?.phone ?? ''), methods: ['POST'] });
+app.use('/api/admin/login', strictLimit);
+app.use('/api/admin/forgot-password', rateLimit({ windowMs: 60_000, max: 3 }));
+app.use('/api/account/register', strictLimit);
+app.use('/api/account/login', strictLimit);
+app.use('/api/account/logout', rateLimit({ windowMs: 60_000, max: 20 }));
+app.use('/api/orders', orderLimit);
+
+// ==========================================
 // AUTH
 // ==========================================
 app.post('/api/admin/login', async (req, res) => {
@@ -126,17 +161,14 @@ app.post('/api/admin/login', async (req, res) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email: username, password });
     if (!error && data?.session) {
       const token = data.session.access_token;
-      const encoded = Buffer.from(token).toString('base64');
-      res.cookie('session', encoded, { httpOnly: true, maxAge: 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
+      res.cookie('session', signValue({ token, expiry: Date.now() + 86400000 }), { httpOnly: true, maxAge: 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
       return res.json({ success: true, user: { email: data.user.email } });
     }
   } catch {}
   // Fallback: local admin_users table
   const admin = await queryOne('SELECT * FROM admin_users WHERE username = ?', [username]);
   if (admin && verifyPassword(password, admin.password_hash)) {
-    const sessionObj = { userId: admin.id, expiry: Date.now() + 86400000 };
-    const encoded = Buffer.from(JSON.stringify(sessionObj)).toString('base64');
-    res.cookie('session', encoded, { httpOnly: true, maxAge: 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
+    res.cookie('session', signValue({ userId: admin.id, expiry: Date.now() + 86400000 }), { httpOnly: true, maxAge: 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
     return res.json({ success: true, user: { email: admin.username } });
   }
   return res.status(401).json({ error: 'Invalid credentials' });
@@ -147,22 +179,22 @@ app.post('/api/admin/logout', (req, res) => {
   res.json({ success: true });
 });
 
-app.get('/api/admin/me', async (req, res) => {
+app.get('/api/admin/me', asyncRoute(async (req, res) => {
   const sess = getSession(req);
   if (!sess) return res.status(401).json({ loggedIn: false });
   const token = sess.raw;
-  // Local-admin cookies carry a JSON payload; Supabase cookies carry a JWT.
-  try {
-    const payload = JSON.parse(token);
-    if (payload && payload.userId && payload.expiry > Date.now()) {
-      const admin = await queryOne('SELECT username FROM admin_users WHERE id = ?', [payload.userId]);
-      if (admin) return res.json({ loggedIn: true, user: { email: admin.username } });
-    }
-  } catch {}
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data?.user) return res.status(401).json({ loggedIn: false });
-  res.json({ loggedIn: true, user: { email: data.user.email } });
-});
+  // Signed local-admin cookies carry a JSON payload with userId.
+  if (sess.payload?.userId && sess.payload.expiry > Date.now()) {
+    const admin = await queryOne('SELECT username FROM admin_users WHERE id = ?', [sess.payload.userId]);
+    if (admin) return res.json({ loggedIn: true, user: { email: admin.username } });
+  }
+  // Supabase JWT — must verify server-side (a fabricated token grants nothing).
+  if (typeof token === 'string' && token.includes('.') && (await supabaseTokenValid(token))) {
+    const { data } = await supabase.auth.getUser(token);
+    if (data?.user) return res.json({ loggedIn: true, user: { email: data.user.email } });
+  }
+  return res.status(401).json({ loggedIn: false });
+}));
 
 app.post('/api/admin/forgot-password', async (req, res) => {
   const { email } = req.body || {};
@@ -230,7 +262,7 @@ app.post('/api/account/register', async (req, res) => {
     'INSERT INTO customers (phone_digits, password_hash, full_name, email) VALUES (?, ?, ?, ?)',
     [key, hashPassword(password), full_name, text(b.email, 160)]
   );
-  const encoded = Buffer.from(JSON.stringify({ customerId: r.lastId, expiry: Date.now() + 30 * 86400000 })).toString('base64');
+  const encoded = signValue({ customerId: r.lastId, expiry: Date.now() + 30 * 86400000 });
   res.cookie('customer_session', encoded, { httpOnly: true, maxAge: 30 * 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
   res.json({ success: true, customer: { id: r.lastId, phone: key, full_name } });
 });
@@ -242,7 +274,7 @@ app.post('/api/account/login', async (req, res) => {
   if (!customer || !verifyPassword(String(password ?? ''), customer.password_hash)) {
     return res.status(401).json({ success: false, message: 'Phone number or password is incorrect.' });
   }
-  const encoded = Buffer.from(JSON.stringify({ customerId: customer.id, expiry: Date.now() + 30 * 86400000 })).toString('base64');
+  const encoded = signValue({ customerId: customer.id, expiry: Date.now() + 30 * 86400000 });
   res.cookie('customer_session', encoded, { httpOnly: true, maxAge: 30 * 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
   res.json({ success: true, customer: { id: customer.id, phone: customer.phone_digits, full_name: customer.full_name } });
 });
@@ -791,6 +823,10 @@ if (DB_DRIVER === 'sqlite') {
     res.status(404).sendFile(join(__dirname, '..', 'public', '404.html'));
   });
 }
+
+// Global error handler — must be registered AFTER all routes/middleware so it
+// receives errors forwarded by the asyncRoute wrapper above.
+app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
