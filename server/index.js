@@ -512,6 +512,12 @@ app.post('/api/orders', async (req, res) => {
     map_link: text(b.map_link, 500),
   };
 
+  // The map link is optional and rendered as a clickable href in the admin
+  // panel — only accept http(s) URLs, drop anything else (e.g. javascript:).
+  if (order.map_link && !/^https?:\/\//i.test(order.map_link)) {
+    order.map_link = '';
+  }
+
   // --- Validation (server-side, mirrors the client form) ---
   const errors = [];
   if (order.customer_name.length < 2) errors.push('Full name is required.');
@@ -540,13 +546,19 @@ app.post('/api/orders', async (req, res) => {
      hasCoords ? latitude : null, hasCoords ? longitude : null, order.map_link, total]
   );
   const orderId = r.lastId;
-  if (Array.isArray(items)) {
+  try {
     for (const item of items.slice(0, 50)) {
+      const it = item && typeof item === 'object' ? item : {};
+      const n = it.product_id === undefined || it.product_id === null || it.product_id === '' ? NaN : Number(it.product_id);
+      const product_id = Number.isInteger(n) && n > 0 ? n : null;
       await run(
         `INSERT INTO order_items (order_id, product_id, product_name, weight, quantity, price) VALUES (?, ?, ?, ?, ?, ?)`,
-        [orderId, item.product_id || null, text(item.name, 200), text(item.weight, 60), Math.max(1, Math.min(999, parseInt(item.quantity, 10) || 1)), Math.max(0, parseFloat(item.price) || 0)]
+        [orderId, product_id, text(it.name, 200), text(it.weight, 60), Math.max(1, Math.min(999, parseInt(it.quantity, 10) || 1)), Math.max(0, parseFloat(it.price) || 0)]
       );
     }
+  } catch (e) {
+    console.error('order item insert failed:', e);
+    return res.status(500).json({ success: false, message: 'Could not save order items. Please try again.' });
   }
   res.json({ success: true, orderId, message: 'Order created successfully.' });
 });

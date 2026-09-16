@@ -173,6 +173,17 @@
     let editingProductId = null;
     let editingBannerId = null;
 
+    // Escape untrusted values before injecting into HTML (orders come from
+    // the public POST /api/orders endpoint, so fields are attacker-writable).
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    }
+    // Only allow http(s) links into href attributes.
+ function safeUrl(v) {
+      const s = String(v || '');
+      return /^https?:\/\//i.test(s) ? s : '#';
+    }
+
     // Shared API helper: shows the server's error instead of a fake success toast
     async function api(url, options, okMsg) {
       const r = await fetch(url, options);
@@ -404,17 +415,17 @@
         const orders = await r.json();
         document.getElementById('ordersCount').textContent = orders.length + ' order(s)';
         document.getElementById('ordersTable').innerHTML = orders.map(o => {
-          const items = (o.items || []).map(i => `${i.quantity}× ${i.product_name}${i.weight ? ' (' + i.weight + ')' : ''}`).join('<br>') || '<em>no items</em>';
+          const items = (o.items || []).map(i => `${Number(i.quantity) || 0}× ${esc(i.product_name)}${i.weight ? ' (' + esc(i.weight) + ')' : ''}`).join('<br>') || '<em>no items</em>';
           const statusOpts = ['pending','confirmed','shipped','delivered','cancelled'].map(s => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s}</option>`).join('');
           const date = o.created_at ? new Date(o.created_at).toLocaleString() : '';
-          const address = [o.address, o.landmark, o.city, o.state, o.pincode ? '-' + o.pincode : ''].filter(Boolean).join(', ') || (o.address ? '' : '<em>—</em>');
-          const emailLine = o.email ? `<br><small>✉️ ${o.email}</small>` : '';
-          const notesLine = o.notes ? `<br><small>📝 ${o.notes}</small>` : '';
+          const address = [o.address, o.landmark, o.city, o.state, o.pincode ? '-' + o.pincode : ''].filter(Boolean).map(esc).join(', ') || '<em>—</em>';
+          const emailLine = o.email ? `<br><small>✉️ ${esc(o.email)}</small>` : '';
+          const notesLine = o.notes ? `<br><small>📝 ${esc(o.notes)}</small>` : '';
           const mapLine = o.map_link
-            ? `<br><a href="${o.map_link}" target="_blank" rel="noopener noreferrer" style="color:#2D6A4F;font-weight:600;">📍 Map pin${o.latitude != null ? ' (' + Number(o.latitude).toFixed(5) + ', ' + Number(o.longitude).toFixed(5) + ')' : ''}</a>`
+            ? `<br><a href="${esc(safeUrl(o.map_link))}" target="_blank" rel="noopener noreferrer" style="color:#2D6A4F;font-weight:600;">📍 Map pin${o.latitude != null ? ' (' + Number(o.latitude).toFixed(5) + ', ' + Number(o.longitude).toFixed(5) + ')' : ''}</a>`
             : '';
-          const payBadge = (o.payment_method || 'cod').toUpperCase();
-          return `<tr><td>${o.id}</td><td><strong>${o.customer_name || ''}</strong>${emailLine}<br><small>${address}</small>${notesLine}${mapLine}</td><td>${items}</td><td>₹${o.total_price}</td><td>${o.phone || ''}</td><td><span style="background:rgba(196,148,61,.15);color:#8a6420;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700;">${payBadge}</span></td><td><select onchange="updateOrderStatus(${o.id}, this.value)">${statusOpts}</select></td><td><input type="checkbox" ${o.is_paid ? 'checked' : ''} onchange="updateOrderPaid(${o.id}, this.checked)"></td><td><small>${date}</small></td><td><button class="admin-btn admin-btn-danger" onclick="deleteOrder(${o.id})">Delete</button></td></tr>`;
+          const payBadge = esc((o.payment_method || 'cod').toUpperCase());
+          return `<tr><td>${esc(o.id)}</td><td><strong>${esc(o.customer_name)}</strong>${emailLine}<br><small>${address}</small>${notesLine}${mapLine}</td><td>${items}</td><td>₹${esc(o.total_price)}</td><td>${esc(o.phone)}</td><td><span style="background:rgba(196,148,61,.15);color:#8a6420;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700;">${payBadge}</span></td><td><select onchange="updateOrderStatus(${esc(o.id)}, this.value)">${statusOpts}</select></td><td><input type="checkbox" ${o.is_paid ? 'checked' : ''} onchange="updateOrderPaid(${esc(o.id)}, this.checked)"></td><td><small>${date}</small></td><td><button class="admin-btn admin-btn-danger" onclick="deleteOrder(${esc(o.id)})">Delete</button></td></tr>`;
         }).join('') || '<tr><td colspan="10"><em>No orders yet.</em></td></tr>';
       } catch (e) {
         showToast('⚠️ Failed to load orders');

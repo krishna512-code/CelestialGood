@@ -139,6 +139,61 @@ describe('Storefront read APIs', () => {
     expect(res.body.orderId).toBeDefined();
   });
 
+  test('public order endpoint sanitizes map_link and tolerates malformed items', async () => {
+    const loginRes = await request(app).post('/api/admin/login').send(ADMIN_USER).expect(200);
+    const cookie = loginRes.headers['set-cookie'];
+
+    // javascript: scheme must be dropped; https link preserved; null/non-object
+    // items and non-integer product_id must not hang the request or throw.
+    const created = await request(app)
+      .post('/api/orders')
+      .send({
+        customer_name: 'Sanitize Test',
+        phone: '9876500000',
+        address: '1 Test Lane, Somewhere',
+        city: 'Kolhapur',
+        state: 'Maharashtra',
+        pincode: '416001',
+        map_link: 'javascript:alert(document.cookie)',
+        total_price: 100,
+        items: [null, { product_id: 'abc', name: 'Weird Product', quantity: 2, price: 50 }, { name: 'No Id Item', quantity: 1, price: 50 }],
+      })
+      .expect(200);
+    expect(created.body.success).toBe(true);
+    const orderId = created.body.orderId;
+
+    const orders = await request(app).get('/api/orders').set('Cookie', cookie).expect(200);
+    const saved = orders.body.find(o => o.id === orderId);
+    expect(saved).toBeDefined();
+    expect(saved.map_link).toBe(''); // javascript: scheme stripped
+    expect(saved.items).toHaveLength(3); // null item normalized, all stored
+    expect(saved.items[0].product_id).toBeNull();
+    expect(saved.items[1].product_id).toBeNull(); // 'abc' not an integer id
+    expect(saved.items[1].quantity).toBe(2);
+
+    // https map_link is preserved
+    const ok = await request(app)
+      .post('/api/orders')
+      .send({
+        customer_name: 'Sanitize Test Two',
+        phone: '9876500001',
+        address: '2 Test Lane, Somewhere',
+        city: 'Kolhapur',
+        state: 'Maharashtra',
+        pincode: '416001',
+        map_link: 'https://maps.google.com/?q=16.7,74.2',
+        total_price: 50,
+        items: [{ name: 'X', quantity: 1, price: 50 }],
+      })
+      .expect(200);
+    const orders2 = await request(app).get('/api/orders').set('Cookie', cookie).expect(200);
+    const saved2 = orders2.body.find(o => o.id === ok.body.orderId);
+    expect(saved2.map_link).toBe('https://maps.google.com/?q=16.7,74.2');
+
+    await request(app).delete(`/api/orders/${orderId}`).set('Cookie', cookie).expect(200);
+    await request(app).delete(`/api/orders/${ok.body.orderId}`).set('Cookie', cookie).expect(200);
+  });
+
   test('COD checkout stores full customer details, location pin, and rejects invalid data', async () => {
     const orderPayload = {
       customer_name: 'COD Checkout Test',
