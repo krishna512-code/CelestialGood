@@ -260,3 +260,23 @@ SELECT * FROM (
   ((SELECT id FROM orders WHERE id = 1003), 6, $cb$Traditional Bilona A2 Desi Gir Cow Ghee$cb$, $cb$500ml$cb$, 1, 850)
 ) AS v(order_id, product_id, product_name, weight, quantity, price)
 WHERE NOT EXISTS (SELECT 1 FROM order_items);
+
+-- ============================================================
+-- Align IDENTITY sequences past the seeded ids (seeding inserts
+-- explicit ids via OVERRIDING SYSTEM VALUE, which does NOT bump
+-- the sequence — without this, the next insert fails with
+-- "duplicate key value violates unique constraint "<table>_pkey"")
+-- ============================================================
+DO $$
+DECLARE r RECORD; v_next bigint;
+BEGIN
+  FOR r IN
+    SELECT table_name AS tbl, column_name AS col
+      FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND (column_default LIKE 'nextval%' OR is_identity = 'YES')
+  LOOP
+    EXECUTE format('SELECT COALESCE(MAX(%I), 0) + 1 FROM %I', r.col, r.tbl) INTO v_next;
+    PERFORM setval(pg_get_serial_sequence(r.tbl, r.col), v_next, false);
+  END LOOP;
+END $$;

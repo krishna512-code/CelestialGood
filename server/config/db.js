@@ -67,6 +67,25 @@ async function ensurePgMigrated() {
   for (const [col, def] of ORDER_DETAIL_COLUMNS) {
     await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ${col} ${def}`);
   }
+  // Seeding (migrate-pg.mjs / supabase-setup.sql) inserts rows with explicit
+  // ids via OVERRIDING SYSTEM VALUE, which does NOT advance IDENTITY
+  // sequences — the next plain insert then generates an id that already
+  // exists and fails with "duplicate key value violates unique constraint
+  // \"<table>_pkey\"". Re-align every sequence past the max id once per
+  // process; no-op when already ahead.
+  // information_schema covers both SERIAL (column_default) and IDENTITY
+  // (is_identity) columns — pg_depend deptype differs between them ('a' vs
+  // 'i'), which makes catalog-join approaches miss identity sequences.
+  const seqs = await pool.query(
+    `SELECT table_name AS tbl, column_name AS col
+       FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND (column_default LIKE 'nextval%' OR is_identity = 'YES')`);
+  for (const { tbl, col } of seqs.rows) {
+    await pool.query(
+      `SELECT setval(pg_get_serial_sequence('${tbl}', '${col}'),
+              COALESCE((SELECT MAX(${col}) FROM ${tbl}), 0) + 1, false)`);
+  }
   pgMigrated = true;
 }
 

@@ -268,6 +268,23 @@ async function main() {
       console.log('  orders: already seeded, skipping');
     }
 
+    // Seeding above inserts explicit ids with OVERRIDING SYSTEM VALUE, which
+    // does not advance IDENTITY sequences. Without this, the next plain
+    // insert (e.g. a new category from the admin panel) generates an id that
+    // already exists → "duplicate key value violates unique constraint
+    // \"<table>_pkey\"". Align every sequence past its table's max id.
+    const seqs = await client.query(
+      `SELECT table_name AS tbl, column_name AS col
+         FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND (column_default LIKE 'nextval%' OR is_identity = 'YES')`);
+    for (const { tbl, col } of seqs.rows) {
+      await client.query(
+        `SELECT setval(pg_get_serial_sequence('${tbl}', '${col}'),
+                COALESCE((SELECT MAX(${col}) FROM ${tbl}), 0) + 1, false)`);
+    }
+    console.log(`✓ id sequences aligned (${seqs.rowCount} tables)`);
+
     // Optional local-admin bootstrap
     if (process.env.OWNER_USERNAME && process.env.OWNER_PASSWORD) {
       const { hashPassword } = await import('../server/middleware/auth.js');

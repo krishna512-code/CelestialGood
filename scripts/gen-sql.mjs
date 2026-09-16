@@ -95,7 +95,17 @@ CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   customer_name TEXT DEFAULT '',
   phone TEXT DEFAULT '',
+  email TEXT DEFAULT '',
   address TEXT DEFAULT '',
+  landmark TEXT DEFAULT '',
+  city TEXT DEFAULT '',
+  state TEXT DEFAULT '',
+  pincode TEXT DEFAULT '',
+  notes TEXT DEFAULT '',
+  latitude REAL,
+  longitude REAL,
+  map_link TEXT DEFAULT '',
+  payment_method TEXT DEFAULT 'cod',
   total_price REAL DEFAULT 0,
   is_paid INTEGER DEFAULT 0,
   status TEXT DEFAULT 'pending',
@@ -247,5 +257,27 @@ const SEED_COMMENT = `
 -- Seed data (runs only when tables are empty — idempotent)
 -- ============================================================`;
 
-writeFileSync(join(__dirname, 'supabase-setup.sql'), SCHEMA + SEED_COMMENT + '\n' + seedBlocks.join('\n\n') + '\n');
+const SEQ_FIX = `
+
+-- ============================================================
+-- Align IDENTITY sequences past the seeded ids (seeding inserts
+-- explicit ids via OVERRIDING SYSTEM VALUE, which does NOT bump
+-- the sequence — without this, the next insert fails with
+-- "duplicate key value violates unique constraint \"<table>_pkey\"")
+-- ============================================================
+DO $$
+DECLARE r RECORD; v_next bigint;
+BEGIN
+  FOR r IN
+    SELECT table_name AS tbl, column_name AS col
+      FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND (column_default LIKE 'nextval%' OR is_identity = 'YES')
+  LOOP
+    EXECUTE format('SELECT COALESCE(MAX(%I), 0) + 1 FROM %I', r.col, r.tbl) INTO v_next;
+    PERFORM setval(pg_get_serial_sequence(r.tbl, r.col), v_next, false);
+  END LOOP;
+END $$;`;
+
+writeFileSync(join(__dirname, 'supabase-setup.sql'), SCHEMA + SEED_COMMENT + '\n' + seedBlocks.join('\n\n') + SEQ_FIX + '\n');
 console.log('✓ wrote scripts/supabase-setup.sql — paste it into Supabase → SQL Editor → Run');
