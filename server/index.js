@@ -190,6 +190,20 @@ function phoneKey(raw) {
   return d;
 }
 
+// International matching: the same number is written with the country code
+// ('447700900777'), with a national 0 ('07700900777') or bare ('7700900777').
+// True equivalence needs country knowledge we don't have, so treat numbers as
+// matching when one is a suffix of the other (>= 7 digits), which is exactly
+// how national dialing disambiguates. 91/0-prefix variants collapse first.
+function phoneMatches(orderPhone, key) {
+  const d = String(orderPhone ?? '').replace(/[^0-9]/g, '');
+  const candidates = new Set([d]);
+  if (d.length === 11 && d.startsWith('0')) candidates.add(d.slice(1));
+  if (d.length === 12 && d.startsWith('91')) candidates.add(d.slice(2));
+  return [...candidates].some(c =>
+    c === key || (c.length >= 7 && key.length >= 7 && (key.endsWith(c) || c.endsWith(key))));
+}
+
 app.post('/api/account/register', async (req, res) => {
   const b = req.body || {};
   const text = (v, max) => String(v ?? '').trim().slice(0, max);
@@ -267,10 +281,10 @@ app.get('/api/account/orders', requireCustomer, async (req, res) => {
     `SELECT * FROM orders WHERE customer_id = ? OR phone = ? ORDER BY created_at DESC, id DESC LIMIT 200`,
     [me.id, key]
   );
-  // Phone match needs normalization per row (orders may store '91'-prefixed
-  // or 0-prefixed variants); filter in JS over a modest set.
+  // Phone match needs normalization per row (orders may store any national
+  // or international variant); filter in JS over a modest set.
   const rows = orders.length >= 200 ? orders : await query('SELECT * FROM orders ORDER BY created_at DESC, id DESC LIMIT 1000');
-  const matched = rows.filter(o => o.customer_id === me.id || phoneKey(o.phone) === key);
+  const matched = rows.filter(o => o.customer_id === me.id || phoneMatches(o.phone, key));
   const withItems = await Promise.all(matched.map(async o => ({
     id: o.id,
     created_at: o.created_at,
