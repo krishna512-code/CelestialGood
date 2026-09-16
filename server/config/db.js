@@ -63,8 +63,24 @@ if (DB_DRIVER === 'postgres') {
 // Postgres lazily self-migrates the orders table on first query so a deploy
 // against existing Supabase data never needs a manual ALTER step.
 let pgMigrated = false;
+// Pool accessor for sibling modules that share the connection
+// (pg-security-migration.js). The pool is created once at module init.
+export function getPool() {
+  if (!pool) throw new Error('Postgres pool not initialised (sqlite mode?)');
+  return pool;
+}
+
 async function ensurePgMigrated() {
   if (pgMigrated) return;
+  // Security migration first: creates the customers table if missing (a real
+  // production gap this fixes) and applies RLS/EXECUTE lockdowns. Failure is
+  // logged but never blocks serving — worst case is the pre-existing state.
+  try {
+    const { ensureSecurityMigration } = await import('../pg-security-migration.js');
+    await ensureSecurityMigration();
+  } catch (e) {
+    console.error('[pg-security-migration] failed:', e.message);
+  }
   for (const [col, def] of ORDER_DETAIL_COLUMNS) {
     await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ${col} ${def}`);
   }

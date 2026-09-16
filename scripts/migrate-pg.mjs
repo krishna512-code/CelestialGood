@@ -230,8 +230,7 @@ async function main() {
       DROP POLICY IF EXISTS "service role full access" ON products; CREATE POLICY "service role full access" ON products FOR ALL TO service_role USING (true) WITH CHECK (true);
       DROP POLICY IF EXISTS "service role full access" ON images; CREATE POLICY "service role full access" ON images FOR ALL TO service_role USING (true) WITH CHECK (true);
       DROP POLICY IF EXISTS "service role full access" ON orders; CREATE POLICY "service role full access" ON orders FOR ALL TO service_role USING (true) WITH CHECK (true);
-      DROP POLICY IF EXISTS "service role full access" ON order_items;
-      DROP POLICY IF EXISTS "service role full access" ON customers; CREATE POLICY "service role full access" ON order_items FOR ALL TO service_role USING (true) WITH CHECK (true);
+      DROP POLICY IF EXISTS "service role full access" ON order_items; CREATE POLICY "service role full access" ON order_items FOR ALL TO service_role USING (true) WITH CHECK (true);
       DROP POLICY IF EXISTS "service role full access" ON customers; CREATE POLICY "service role full access" ON customers FOR ALL TO service_role USING (true) WITH CHECK (true);
       DROP POLICY IF EXISTS "service role full access" ON testimonials; CREATE POLICY "service role full access" ON testimonials FOR ALL TO service_role USING (true) WITH CHECK (true);
       DROP POLICY IF EXISTS "service role full access" ON faq; CREATE POLICY "service role full access" ON faq FOR ALL TO service_role USING (true) WITH CHECK (true);
@@ -239,6 +238,16 @@ async function main() {
       DROP POLICY IF EXISTS "service role full access" ON admin_users; CREATE POLICY "service role full access" ON admin_users FOR ALL TO service_role USING (true) WITH CHECK (true);
     `);
     console.log('✓ RLS enabled (service_role policies)');
+
+    // Auth hardening (advisor: auth_leaked_password_protection) — reject
+    // passwords known to HaveIBeenPwned at signup/change. Non-fatal if the
+    // connected role cannot set database-level custom GUCs.
+    try {
+      await client.query(`ALTER DATABASE postgres SET "auth.leaked_password_protection" TO "on"`);
+      console.log('✓ leaked password protection enabled');
+    } catch (e) {
+      console.warn(`! leaked password protection not applied: ${e.message}`);
+    }
 
     const count = async (t) => (await client.query(`SELECT COUNT(*)::int as c FROM ${t}`)).rows[0].c;
     const seed = async (t, sql, rows) => {
