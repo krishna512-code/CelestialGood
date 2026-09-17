@@ -2,7 +2,7 @@ import express from 'express';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { query, queryOne, run, initDatabase, DB_DRIVER } from './config/db.js';
-import { supabase } from './config/supabase.js';
+import { supabase, SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_PUBLISHABLE_KEY } from './config/supabase.js';
 import { upload, saveUpload, UPLOADS_DIR } from './config/storage.js';
 import { hashPassword, verifyPassword } from './middleware/auth.js';
 import cors from 'cors';
@@ -77,8 +77,17 @@ const requireAuth = asyncRoute(async (req, res, next) => {
   if (!req.session) return res.status(401).json({ error: 'Unauthorized. Please login.' });
   if (req.session.userId) return next(); // local admin — HMAC already verified
   if (req.session.token) {
-    // Supabase-issued JWT — verify it against Supabase (cached).
-    if (await supabaseTokenValid(req.session.token)) return next();
+    // Supabase-issued JWT — verify it against Supabase (cached). Access tokens
+    // expire after ~1h; when the stored token is expired, use the saved
+    // refresh_token to mint a fresh one and re-issue the session cookie, so an
+    // admin mid-work never gets bounced to login by an expired JWT.
+    let token = req.session.token;
+    if (!(await supabaseTokenValid(token))) {
+      const refreshed = await refreshSession(req, res);
+      if (!refreshed) return res.status(401).json({ error: 'Unauthorized. Please login.' });
+      token = refreshed;
+    }
+    if (await supabaseTokenValid(token)) return next();
     return res.status(401).json({ error: 'Unauthorized. Please login.' });
   }
   return res.status(401).json({ error: 'Unauthorized. Please login.' });
@@ -97,9 +106,42 @@ async function supabaseTokenValid(token) {
   } catch {
     ok = false; // fail closed: unverifiable token grants nothing
   }
-  supabaseTokenCache.set(token, { ok, until: Date.now() + 3600_000 });
-  if (supabaseTokenCache.size > 500) supabaseTokenCache.clear();
+  // Cache ONLY verified-good tokens. Caching a failure would pin a transient
+  // network blip (or a momentarily unreachable Supabase) for an hour and
+  // reject perfectly valid tokens — the intermittent-401 class of bug.
+  if (ok) {
+    supabaseTokenCache.set(token, { ok: true, until: Date.now() + 3600_000 });
+    if (supabaseTokenCache.size > 500) supabaseTokenCache.clear();
+  }
   return ok;
+}
+
+// Exchange the session's refresh_token for a new access token via the Supabase
+// Auth token endpoint, then re-sign and re-issue the session cookie so the
+// browser keeps a valid session without another manual login. Returns the new
+// access token, or null when there is no refresh token or the refresh fails
+// (revoked / signed out → caller rejects with 401 and the UI shows login).
+const SESSION_COOKIE = 'session';
+const SESSION_TTL_MS = 86400000;
+async function refreshSession(req, res) {
+  const refreshToken = req.session.refreshToken;
+  if (!refreshToken) return null;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_PUBLISHABLE_KEY || SUPABASE_SERVICE_KEY },
+      body: JSON.stringify({ grant_type: 'refresh_token', refresh_token: refreshToken }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (!d.access_token || !d.refresh_token) return null;
+    res.cookie(SESSION_COOKIE, signValue({ token: d.access_token, refreshToken: d.refresh_token, expiry: Date.now() + SESSION_TTL_MS }), {
+      httpOnly: true, maxAge: SESSION_TTL_MS, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}),
+    });
+    return d.access_token;
+  } catch {
+    return null;
+  }
 }
 
 // Guard for customer-account routes (storefront, not admin).
@@ -161,7 +203,8 @@ app.post('/api/admin/login', async (req, res) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email: username, password });
     if (!error && data?.session) {
       const token = data.session.access_token;
-      res.cookie('session', signValue({ token, expiry: Date.now() + 86400000 }), { httpOnly: true, maxAge: 86400000, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
+      const refreshToken = data.session.refresh_token || undefined;
+      res.cookie(SESSION_COOKIE, signValue({ token, refreshToken, expiry: Date.now() + SESSION_TTL_MS }), { httpOnly: true, maxAge: SESSION_TTL_MS, ...(IS_PROD ? { secure: true, sameSite: 'lax' } : {}) });
       return res.json({ success: true, user: { email: data.user.email } });
     }
   } catch {}

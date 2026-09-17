@@ -125,12 +125,13 @@
         <div class="flex-row"><div style="flex:1"><label>Category</label><select id="prod-category"><option value="">Select...</option></select></div><div style="flex:1"><label>Badge</label><input type="text" id="prod-badge" placeholder="e.g., 🔥 Bestseller"></div></div>
         <label>Variants (JSON)</label><textarea id="prod-variants" placeholder='[{"weight":"500g","price":180,"mrp":220}]' style="height:60px"></textarea>
         <div class="flex-row"><label>Featured</label><input type="checkbox" id="prod-featured"></div>
-        <label>Image</label><input type="file" id="prod-image" accept="image/*">
-        <label>Image URL (paste a direct link to an image)</label><input type="url" id="prod-image-url" placeholder="https://example.com/product-photo.jpg" oninput="updateImagePreview('prod')">
+        <label>Image</label><input type="file" id="prod-image" accept="image/*" onchange="onImagePicked('prod', this)">
+        <label>Image URL (paste a direct link to an image)</label>
+        <div class="flex-row"><input type="url" id="prod-image-url" placeholder="https://example.com/product-photo.jpg" style="flex:1" oninput="updateImagePreview('prod')"><button type="button" class="admin-btn" onclick="copyImageUrl('prod')">📋 Copy URL</button></div>
         <div id="prod-image-preview-wrap" class="hidden"><label>Preview</label><br><img id="prod-image-preview" class="image-preview" alt="Product image preview"></div>
         <div class="flex-row"><button class="admin-btn" id="prod-save-btn" onclick="addProduct()">Add Product</button><button class="admin-btn admin-btn-danger hidden" id="prod-cancel-btn" onclick="cancelProductEdit()">Cancel Edit</button></div>
       </div>
-      <table class="admin-table"><thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Actions</th></tr></thead><tbody id="productsTable"></tbody></table>
+      <table class="admin-table"><thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Actions</th></tr></thead><tbody id="productsTable"></tbody></table>
     </div>
 
     <div id="tab-banners" class="admin-section hidden">
@@ -140,12 +141,13 @@
         <label>Badge</label><input type="text" id="ban-badge" placeholder="e.g., 🔥 Bestseller">
         <label>Subtitle</label><input type="text" id="ban-subtitle" placeholder="Subtitle">
         <label>Link</label><input type="text" id="ban-link" placeholder="Link URL">
-        <label>Image</label><input type="file" id="ban-image" accept="image/*">
-        <label>Image URL (paste a direct link to an image)</label><input type="url" id="ban-image-url" placeholder="https://example.com/banner-photo.jpg" oninput="updateImagePreview('ban')">
+        <label>Image</label><input type="file" id="ban-image" accept="image/*" onchange="onImagePicked('ban', this)">
+        <label>Image URL (paste a direct link to an image)</label>
+        <div class="flex-row"><input type="url" id="ban-image-url" placeholder="https://example.com/banner-photo.jpg" style="flex:1" oninput="updateImagePreview('ban')"><button type="button" class="admin-btn" onclick="copyImageUrl('ban')">📋 Copy URL</button></div>
         <div id="ban-image-preview-wrap" class="hidden"><label>Preview</label><br><img id="ban-image-preview" class="image-preview" alt="Banner image preview"></div>
         <div class="flex-row"><button class="admin-btn" id="ban-save-btn" onclick="addBanner()">Add Banner</button><button class="admin-btn admin-btn-danger hidden" id="ban-cancel-btn" onclick="cancelBannerEdit()">Cancel Edit</button></div>
       </div>
-      <table class="admin-table"><thead><tr><th>Heading</th><th>Badge</th><th>Actions</th></tr></thead><tbody id="bannersTable"></tbody></table>
+      <table class="admin-table"><thead><tr><th>Image</th><th>Heading</th><th>Badge</th><th>Actions</th></tr></thead><tbody id="bannersTable"></tbody></table>
     </div>
 
     <div id="tab-testimonials" class="admin-section hidden">
@@ -273,20 +275,50 @@
     }
     
     function renderCategories(cats) { document.getElementById('categoriesTable').innerHTML = cats.map(c => `<tr><td>${c.name}</td><td>${c.icon}</td><td><button class="admin-btn admin-btn-danger" onclick="deleteCategory(${c.id})">Delete</button></td></tr>`).join(''); }
-    function renderProducts(prods) { allData.products = prods; document.getElementById('productsTable').innerHTML = prods.map(p => `<tr><td>${p.name}</td><td>${p.category_name || ''}</td><td>₹${p.price}</td><td><button class="admin-btn" onclick="editProduct(${p.id})">✏️ Edit</button> <button class="admin-btn admin-btn-danger" onclick="deleteProduct(${p.id})">Delete</button></td></tr>`).join(''); }
-    function renderBanners(bans) { allData.banners = bans; document.getElementById('bannersTable').innerHTML = bans.map(b => `<tr><td>${b.heading}</td><td>${b.badge}</td><td><button class="admin-btn" onclick="editBanner(${b.id})">✏️ Edit</button> <button class="admin-btn admin-btn-danger" onclick="deleteBanner(${b.id})">Delete</button></td></tr>`).join(''); }
+    function renderProducts(prods) { allData.products = prods; document.getElementById('productsTable').innerHTML = prods.map(p => `<tr>${thumbCell(p.image_url, p.name)}<td>${esc(p.name)}</td><td>${esc(p.category_name || '')}</td><td>₹${esc(p.price)}</td><td><button class="admin-btn" onclick="editProduct(${p.id})">✏️ Edit</button> <button class="admin-btn admin-btn-danger" onclick="deleteProduct(${p.id})">Delete</button></td></tr>`).join(''); }
+    function renderBanners(bans) { allData.banners = bans; document.getElementById('bannersTable').innerHTML = bans.map(b => `<tr>${thumbCell(b.image_url, b.heading)}<td>${esc(b.heading)}</td><td>${esc(b.badge)}</td><td><button class="admin-btn" onclick="editBanner(${b.id})">✏️ Edit</button> <button class="admin-btn admin-btn-danger" onclick="deleteBanner(${b.id})">Delete</button></td></tr>`).join(''); }
     function renderTestimonials(tests) { document.getElementById('testimonialsTable').innerHTML = tests.map(t => `<tr><td>${t.name}</td><td>${t.location}</td><td><button class="admin-btn admin-btn-danger" onclick="deleteTestimonial(${t.id})">Delete</button></td></tr>`).join(''); }
     function renderFAQ(faqs) { document.getElementById('faqTable').innerHTML = faqs.map(f => `<tr><td>${f.question}</td><td><button class="admin-btn admin-btn-danger" onclick="deleteFAQ(${f.id})">Delete</button></td></tr>`).join(''); }
     
+    // Instant image reflection: the preview shows (in priority order) a
+    // locally-picked file, a pasted URL, or the item's currently-saved image.
+    // Every path updates the <img> the moment the source changes.
+    const liveImagePicks = {}; // prefix -> object URL of a picked file
     function updateImagePreview(prefix) {
       const wrap = document.getElementById(prefix + '-image-preview-wrap');
       const previewImg = document.getElementById(prefix + '-image-preview');
-      const url = document.getElementById(prefix + '-image-url').value.trim();
+      if (!wrap || !previewImg) return;
+      const pick = liveImagePicks[prefix];
+      const url = pick || document.getElementById(prefix + '-image-url').value.trim();
       if (!url) { wrap.classList.add('hidden'); previewImg.removeAttribute('src'); return; }
       previewImg.src = url;
       wrap.classList.remove('hidden');
       previewImg.onerror = function() { previewImg.style.border = '2px solid #c0392b'; };
       previewImg.onload = function() { previewImg.style.border = ''; };
+    }
+
+    // File picker: reflect the chosen image immediately (before any upload).
+    function onImagePicked(prefix, input) {
+      const f = input.files && input.files[0];
+      if (liveImagePicks[prefix]) { URL.revokeObjectURL(liveImagePicks[prefix]); delete liveImagePicks[prefix]; }
+      if (!f) { updateImagePreview(prefix); return; }
+      liveImagePicks[prefix] = URL.createObjectURL(f);
+      updateImagePreview(prefix);
+    }
+
+    // Copy the URL field's value to the clipboard (for use elsewhere / sharing).
+    async function copyImageUrl(prefix) {
+      const url = document.getElementById(prefix + '-image-url').value.trim();
+      const val = url || liveImagePicks[prefix] || '';
+      if (!val) { showToast('⚠️ No image URL to copy'); return; }
+      try { await navigator.clipboard.writeText(val); showToast('📋 Image URL copied'); }
+      catch (e) { showToast('⚠️ Could not copy: ' + val); }
+    }
+
+    // Thumbnail cell for tables; falls back gracefully when no image exists.
+    function thumbCell(url, alt) {
+      if (!url) return '<td><em style="color:#999">no image</em></td>';
+      return `<td><img src="${esc(url)}" alt="${esc(alt || '')}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #EDE7DA;" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'⚠',style:'color:#c0392b'}))"></td>`;
     }
     
     async function saveSettings() {
@@ -336,8 +368,9 @@
       document.getElementById('prod-variants').value = typeof p.variants === 'string' ? p.variants : JSON.stringify(p.variants || []);
       document.getElementById('prod-category').value = p.category_id || '';
       document.getElementById('prod-image').value = '';
-      document.getElementById('prod-image-url').value = p.image_url && !p.image_url.startsWith('/uploads/') ? p.image_url : '';
-      updateImagePreview();
+      if (liveImagePicks['prod']) { URL.revokeObjectURL(liveImagePicks['prod']); delete liveImagePicks['prod']; }
+      document.getElementById('prod-image-url').value = p.image_url || '';
+      updateImagePreview('prod');
       document.getElementById('prod-save-btn').textContent = 'Update Product';
       document.getElementById('prod-cancel-btn').classList.remove('hidden');
       document.getElementById('tab-products').scrollIntoView({ behavior: 'smooth' });
@@ -349,8 +382,9 @@
       document.getElementById('prod-featured').checked = false;
       document.getElementById('prod-category').value = '';
       document.getElementById('prod-image').value = '';
+      if (liveImagePicks['prod']) { URL.revokeObjectURL(liveImagePicks['prod']); delete liveImagePicks['prod']; }
       document.getElementById('prod-image-url').value = '';
-      updateImagePreview();
+      updateImagePreview('prod');
       document.getElementById('prod-save-btn').textContent = 'Add Product';
       document.getElementById('prod-cancel-btn').classList.add('hidden');
     }
@@ -381,7 +415,8 @@
       document.getElementById('ban-subtitle').value = b.subtitle || '';
       document.getElementById('ban-link').value = b.link || '';
       document.getElementById('ban-image').value = '';
-      document.getElementById('ban-image-url').value = b.image_url && !b.image_url.startsWith('/uploads/') ? b.image_url : '';
+      if (liveImagePicks['ban']) { URL.revokeObjectURL(liveImagePicks['ban']); delete liveImagePicks['ban']; }
+      document.getElementById('ban-image-url').value = b.image_url || '';
       updateImagePreview('ban');
       document.getElementById('ban-save-btn').textContent = 'Update Banner';
       document.getElementById('ban-cancel-btn').classList.remove('hidden');
@@ -392,6 +427,7 @@
       editingBannerId = null;
       ['heading','badge','subtitle','link'].forEach(k => { document.getElementById('ban-'+k).value = ''; });
       document.getElementById('ban-image').value = '';
+      if (liveImagePicks['ban']) { URL.revokeObjectURL(liveImagePicks['ban']); delete liveImagePicks['ban']; }
       document.getElementById('ban-image-url').value = '';
       updateImagePreview('ban');
       document.getElementById('ban-save-btn').textContent = 'Add Banner';
