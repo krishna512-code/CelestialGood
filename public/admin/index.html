@@ -106,12 +106,16 @@
       <h2>Manage Categories</h2>
       <div class="admin-form" style="margin-bottom: 20px;">
         <label>Category Name</label><input type="text" id="cat-name" placeholder="Name">
-        <label>Slug</label><input type="text" id="cat-slug" placeholder="e.g., jaggery">
-        <label>Icon</label><input type="text" id="cat-icon" placeholder="e.g., 🏺">
+        <label>Slug</label><input type="text" id="cat-slug" placeholder="e.g., jaggery (must be unique)">
+        <label>Icon (emoji, shown if no image)</label><input type="text" id="cat-icon" placeholder="e.g., 🏺">
+        <label>Image</label><input type="file" id="cat-image" accept="image/*" onchange="onImagePicked('cat', this)">
+        <label>Image URL (paste a direct link to an image)</label>
+        <div class="flex-row"><input type="url" id="cat-image-url" placeholder="https://example.com/category-photo.jpg" style="flex:1" oninput="updateImagePreview('cat')"><button type="button" class="admin-btn" onclick="copyImageUrl('cat')">📋 Copy URL</button></div>
+        <div id="cat-image-preview-wrap" class="hidden"><label>Preview</label><br><img id="cat-image-preview" class="image-preview" alt="Category image preview"></div>
         <label>Description</label><input type="text" id="cat-desc" placeholder="Description">
-        <button class="admin-btn" onclick="addCategory()">Add Category</button>
+        <div class="flex-row"><button class="admin-btn" id="cat-save-btn" onclick="addCategory()">Add Category</button><button class="admin-btn admin-btn-danger hidden" id="cat-cancel-btn" onclick="cancelCategoryEdit()">Cancel Edit</button></div>
       </div>
-      <table class="admin-table"><thead><tr><th>Name</th><th>Icon</th><th>Actions</th></tr></thead><tbody id="categoriesTable"></tbody></table>
+      <table class="admin-table"><thead><tr><th>Image</th><th>Name</th><th>Icon</th><th>Actions</th></tr></thead><tbody id="categoriesTable"></tbody></table>
     </div>
 
     <div id="tab-products" class="admin-section hidden">
@@ -176,6 +180,7 @@
     let allData = {};
     let editingProductId = null;
     let editingBannerId = null;
+    let editingCategoryId = null;
 
     // Escape untrusted values before injecting into HTML (orders come from
     // the public POST /api/orders endpoint, so fields are attacker-writable).
@@ -274,7 +279,7 @@
       sel.innerHTML = '<option value="">Select...</option>' + cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     }
     
-    function renderCategories(cats) { document.getElementById('categoriesTable').innerHTML = cats.map(c => `<tr><td>${c.name}</td><td>${c.icon}</td><td><button class="admin-btn admin-btn-danger" onclick="deleteCategory(${c.id})">Delete</button></td></tr>`).join(''); }
+    function renderCategories(cats) { allData.categories = cats; document.getElementById('categoriesTable').innerHTML = cats.map(c => `<tr>${thumbCell(c.image_url, c.name)}<td>${esc(c.name)}</td><td>${esc(c.icon || '')}</td><td><button class="admin-btn" onclick="editCategory(${c.id})">✏️ Edit</button> <button class="admin-btn admin-btn-danger" onclick="deleteCategory(${c.id})">Delete</button></td></tr>`).join(''); }
     function renderProducts(prods) { allData.products = prods; document.getElementById('productsTable').innerHTML = prods.map(p => `<tr>${thumbCell(p.image_url, p.name)}<td>${esc(p.name)}</td><td>${esc(p.category_name || '')}</td><td>₹${esc(p.price)}</td><td><button class="admin-btn" onclick="editProduct(${p.id})">✏️ Edit</button> <button class="admin-btn admin-btn-danger" onclick="deleteProduct(${p.id})">Delete</button></td></tr>`).join(''); }
     function renderBanners(bans) { allData.banners = bans; document.getElementById('bannersTable').innerHTML = bans.map(b => `<tr>${thumbCell(b.image_url, b.heading)}<td>${esc(b.heading)}</td><td>${esc(b.badge)}</td><td><button class="admin-btn" onclick="editBanner(${b.id})">✏️ Edit</button> <button class="admin-btn admin-btn-danger" onclick="deleteBanner(${b.id})">Delete</button></td></tr>`).join(''); }
     function renderTestimonials(tests) { document.getElementById('testimonialsTable').innerHTML = tests.map(t => `<tr><td>${t.name}</td><td>${t.location}</td><td><button class="admin-btn admin-btn-danger" onclick="deleteTestimonial(${t.id})">Delete</button></td></tr>`).join(''); }
@@ -328,12 +333,47 @@
     }
     
     async function addCategory() {
-      const name = document.getElementById('cat-name').value;
-      const slug = document.getElementById('cat-slug').value;
-      const icon = document.getElementById('cat-icon').value;
-      const desc = document.getElementById('cat-desc').value;
-      await api('/api/categories', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, slug, icon, description: desc}) }, 'Category added!');
+      const formData = new FormData();
+      ['name','slug','icon','desc'].forEach(k => formData.append(k === 'desc' ? 'description' : k, document.getElementById('cat-' + k).value));
+      const img = document.getElementById('cat-image').files[0];
+      if (img) formData.append('image', img);
+      const imageUrl = document.getElementById('cat-image-url').value.trim();
+      if (imageUrl) formData.append('image_url', imageUrl);
+      if (editingCategoryId) {
+        await api(`/api/categories/${editingCategoryId}`, { method: 'PUT', body: formData }, 'Category updated!');
+        cancelCategoryEdit();
+      } else {
+        await api('/api/categories', { method: 'POST', body: formData }, 'Category added!');
+      }
       loadAllData();
+    }
+
+    function editCategory(id) {
+      const c = (allData.categories || []).find(x => x.id === id);
+      if (!c) return;
+      editingCategoryId = id;
+      document.getElementById('cat-name').value = c.name || '';
+      document.getElementById('cat-slug').value = c.slug || '';
+      document.getElementById('cat-icon').value = c.icon || '';
+      document.getElementById('cat-desc').value = c.description || '';
+      document.getElementById('cat-image').value = '';
+      if (liveImagePicks['cat']) { URL.revokeObjectURL(liveImagePicks['cat']); delete liveImagePicks['cat']; }
+      document.getElementById('cat-image-url').value = c.image_url || '';
+      updateImagePreview('cat');
+      document.getElementById('cat-save-btn').textContent = 'Update Category';
+      document.getElementById('cat-cancel-btn').classList.remove('hidden');
+      document.getElementById('tab-categories').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelCategoryEdit() {
+      editingCategoryId = null;
+      ['name','slug','icon','desc'].forEach(k => { document.getElementById('cat-' + k).value = ''; });
+      document.getElementById('cat-image').value = '';
+      if (liveImagePicks['cat']) { URL.revokeObjectURL(liveImagePicks['cat']); delete liveImagePicks['cat']; }
+      document.getElementById('cat-image-url').value = '';
+      updateImagePreview('cat');
+      document.getElementById('cat-save-btn').textContent = 'Add Category';
+      document.getElementById('cat-cancel-btn').classList.add('hidden');
     }
     
     async function addProduct() {
@@ -446,7 +486,7 @@
       loadAllData();
     }
     
-    async function deleteCategory(id) { await api(`/api/categories/${id}`, {method:'DELETE'}, 'Deleted'); loadAllData(); }
+    async function deleteCategory(id) { await api(`/api/categories/${id}`, {method:'DELETE'}, 'Deleted'); if (editingCategoryId === id) cancelCategoryEdit(); loadAllData(); }
     async function deleteProduct(id) { await api(`/api/products/${id}`, {method:'DELETE'}, 'Deleted'); loadAllData(); }
     async function deleteBanner(id) { await api(`/api/banners/${id}`, {method:'DELETE'}, 'Deleted'); loadAllData(); }
     async function deleteTestimonial(id) { await api(`/api/testimonials/${id}`, {method:'DELETE'}, 'Deleted'); loadAllData(); }

@@ -424,6 +424,10 @@
     function renderFilters() {
       var filters = [{ slug: "all", icon: "", name: "All Products" }].concat(allCategories);
       filterHost.innerHTML = filters.map(function(cat) {
+        if (cat.slug !== "all" && cat.image_url) {
+          var img = '<img class="chip-img" src="' + escapeHTML(cat.image_url) + '" alt="" width="20" height="20">';
+          return '<button type="button" class="chip ' + (cat.slug === activeFilter ? "active" : "") + '" data-filter="' + escapeHTML(cat.slug) + '">' + img + escapeHTML(cat.name) + "</button>";
+        }
         var label = cat.slug === "all" ? cat.name : (cat.icon ? cat.icon + " " : "") + cat.name;
         return '<button type="button" class="chip ' + (cat.slug === activeFilter ? "active" : "") + '" data-filter="' + escapeHTML(cat.slug) + '">' + escapeHTML(label) + "</button>";
       }).join("");

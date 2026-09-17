@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS categories (
   name TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
   icon TEXT DEFAULT '📦',
+  image_url TEXT DEFAULT '',
   description TEXT DEFAULT '',
   billboard_id INTEGER,
   sort_order INTEGER DEFAULT 0,

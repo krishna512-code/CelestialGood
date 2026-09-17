@@ -454,28 +454,48 @@ app.get('/api/categories', async (req, res) => {
   res.json(cats);
 });
 
-app.post('/api/categories', requireAuth, async (req, res) => {
+app.post('/api/categories', requireAuth, upload.single('image'), async (req, res) => {
   const { name, slug, icon, description, billboard_id, sort_order } = req.body || {};
   if (!name) return res.status(400).json({ error: 'Name is required' });
   const cleanSlug = (slug || name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  try {
-    const r = await run(
-      `INSERT INTO categories (name, slug, icon, description, billboard_id, sort_order) VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, cleanSlug, icon || '📦', description || '', billboard_id ? parseInt(billboard_id) : null, parseInt(sort_order) || 0]
-    );
-    res.json({ success: true, id: r.lastId, message: 'Category added.' });
-  } catch (e) {
-    res.status(400).json({ error: e.message });
+  // Slug is UNIQUE in the schema, so re-creating a category whose name/slug was
+  // used before (including a soft-deleted one) must not leak a raw Postgres
+  // error. A soft-deleted owner is transparently revived with the new details;
+  // an active owner is reported in plain language.
+  const owner = await queryOne('SELECT id, name, active FROM categories WHERE slug = ?', [cleanSlug]);
+  let imageUrl = req.body.image_url || '';
+  try { if (req.file) imageUrl = await saveUpload(req.file); } catch (e) {
+    return res.status(500).json({ error: `Image upload failed: ${e.message}` });
   }
+  if (owner) {
+    if (!owner.active) {
+      await run(
+        `UPDATE categories SET name=?, icon=?, image_url=?, description=?, billboard_id=?, sort_order=?, active=1 WHERE id=?`,
+        [name, icon || '📦', imageUrl, description || '', billboard_id ? parseInt(billboard_id) : null, parseInt(sort_order) || 0, owner.id]
+      );
+      return res.json({ success: true, id: owner.id, message: 'Category added (restored a previously deleted category with the same slug).' });
+    }
+    return res.status(400).json({ error: `The slug "${cleanSlug}" is already used by the category "${owner.name}". Pick a different slug.` });
+  }
+  const r = await run(
+    `INSERT INTO categories (name, slug, icon, image_url, description, billboard_id, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [name, cleanSlug, icon || '📦', imageUrl, description || '', billboard_id ? parseInt(billboard_id) : null, parseInt(sort_order) || 0]
+  );
+  res.json({ success: true, id: r.lastId, message: 'Category added.' });
 });
 
-app.put('/api/categories/:id', requireAuth, async (req, res) => {
+app.put('/api/categories/:id', requireAuth, upload.single('image'), async (req, res) => {
   const { name, slug, icon, description, billboard_id, sort_order } = req.body || {};
   const current = await queryOne('SELECT * FROM categories WHERE id = ?', [req.params.id]);
   if (!current) return res.status(404).json({ error: 'Category not found' });
+  let imageUrl = current.image_url ?? '';
+  if (req.body.image_url !== undefined) imageUrl = req.body.image_url;
+  try { if (req.file) imageUrl = await saveUpload(req.file); } catch (e) {
+    return res.status(500).json({ error: `Image upload failed: ${e.message}` });
+  }
   await run(
-    `UPDATE categories SET name=?, slug=?, icon=?, description=?, billboard_id=?, sort_order=? WHERE id=?`,
-    [name ?? current.name, slug ?? current.slug, icon ?? current.icon, description ?? current.description,
+    `UPDATE categories SET name=?, slug=?, icon=?, image_url=?, description=?, billboard_id=?, sort_order=? WHERE id=?`,
+    [name ?? current.name, slug ?? current.slug, icon ?? current.icon, imageUrl, description ?? current.description,
      billboard_id !== undefined ? (billboard_id ? parseInt(billboard_id) : null) : current.billboard_id,
      sort_order !== undefined ? parseInt(sort_order) : current.sort_order,
      req.params.id]

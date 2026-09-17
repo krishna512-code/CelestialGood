@@ -85,6 +85,8 @@ async function ensurePgMigrated() {
   for (const [col, def] of ORDER_DETAIL_COLUMNS) {
     await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ${col} ${def}`);
   }
+  // Category images (added after initial provisioning; no manual ALTER needed)
+  await pool.query("ALTER TABLE categories ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT ''");
   // Seeding (migrate-pg.mjs / supabase-setup.sql) inserts rows with explicit
   // ids via OVERRIDING SYSTEM VALUE, which does NOT advance IDENTITY
   // sequences — the next plain insert then generates an id that already
@@ -163,6 +165,7 @@ export async function initDatabase() {
       name TEXT NOT NULL,
       slug TEXT UNIQUE NOT NULL,
       icon TEXT DEFAULT '📦',
+      image_url TEXT DEFAULT '',
       description TEXT DEFAULT '',
       billboard_id INTEGER,
       sort_order INTEGER DEFAULT 0,
@@ -325,6 +328,9 @@ export async function initDatabase() {
 
   // Migration for DBs created before the role column existed
   try { sqlite.exec("ALTER TABLE admin_users ADD COLUMN role TEXT DEFAULT 'admin'"); } catch {}
+
+  // Migration for DBs created before category images existed
+  try { sqlite.exec("ALTER TABLE categories ADD COLUMN image_url TEXT DEFAULT ''"); } catch {}
 
   // Migration for DBs created before COD checkout details existed
   for (const [col, def] of ORDER_DETAIL_COLUMNS) {

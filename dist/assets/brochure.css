@@ -1399,6 +1399,16 @@ ul { list-style: none; }
   min-height: 38px;
 }
 
+/* Category-filter chip with a real image thumbnail */
+.chip-img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+}
+
 .sort-select {
   padding: 10px 36px 10px 16px;
   font-family: var(--font-body);
