@@ -110,15 +110,17 @@ describe('Admin Authentication', () => {
     expect(upd.body.customer.postal_code).toBe('SW1A 1AA');
     expect(upd.body.customer.country).toBe('United Kingdom');
 
-    // A GUEST order placed with the same UK phone appears in history
-    await request(app)
-      .post('/api/orders')
-      .send({
-        customer_name: 'Nigel Guest', phone: '+44 7911 123456', address: '10 Downing Street, Whitehall',
-        city: 'London', postal_code: 'SW1A 1AA', total_price: 180,
-        items: [{ name: 'Jaggery Cubes', weight: '500g', quantity: 1, price: 180 }],
-      })
-      .expect(200);
+    // Orders are sign-in-gated now, so a phone-matched LEGACY guest order
+    // (placed before the gate existed) is simulated directly in the DB —
+    // matching these remains supported so old customers don't lose history.
+    const guestOrder = await run(
+      `INSERT INTO orders (customer_name, phone, address, city, pincode, total_price, is_paid, status) VALUES (?, ?, ?, ?, ?, ?, 0, 'pending')`,
+      ['Nigel Legacy', '447911123456', '10 Downing Street, Whitehall', 'London', 'SW1A 1AA', 180]
+    );
+    await run(
+      'INSERT INTO order_items (order_id, product_name, weight, quantity, price) VALUES (?, ?, ?, ?, ?)',
+      [guestOrder.lastId, 'Jaggery Cubes', '500g', 1, 180]
+    );
 
     // ...and an India-equivalence guest order (0-prefix variant)
     const inPhone = '+91 98765 43210';
@@ -126,14 +128,14 @@ describe('Admin Authentication', () => {
       .send({ full_name: 'Asha Test', phone: inPhone, password: 'Password123!' }).expect(200);
     const inCookie = (await request(app).post('/api/account/login')
       .send({ phone: '09876543210', password: 'Password123!' }).expect(200)).headers['set-cookie'];
-    await request(app)
-      .post('/api/orders')
-      .send({
-        customer_name: 'Asha Guest', phone: '9876543210', address: '5 MG Road, Area',
-        city: 'Kolhapur', postal_code: '416001', total_price: 320,
-        items: [{ name: 'Honey', weight: '250g', quantity: 1, price: 320 }],
-      })
-      .expect(200);
+    const inGuest = await run(
+      `INSERT INTO orders (customer_name, phone, address, city, pincode, total_price, is_paid, status) VALUES (?, ?, ?, ?, ?, ?, 0, 'pending')`,
+      ['Asha Legacy', '9876543210', '5 MG Road, Area', 'Kolhapur', '416001', 320]
+    );
+    await run(
+      'INSERT INTO order_items (order_id, product_name, weight, quantity, price) VALUES (?, ?, ?, ?, ?)',
+      [inGuest.lastId, 'Honey', '250g', 1, 320]
+    );
 
     const orders = await request(app).get('/api/account/orders').set('Cookie', cookie).expect(200);
     expect(Array.isArray(orders.body)).toBe(true);
@@ -155,7 +157,9 @@ describe('Admin Authentication', () => {
     expect(setC).toMatch(/session=;/); // value emptied
     expect(setC).toMatch(/Expires=Thu, 01 Jan 1970/); // expiry in the past
 
-    // Cleanup customers created here
+    // Cleanup customers and legacy guest orders created here
+    await run('DELETE FROM order_items WHERE order_id IN (?, ?)', [guestOrder.lastId, inGuest.lastId]);
+    await run('DELETE FROM orders WHERE id IN (?, ?)', [guestOrder.lastId, inGuest.lastId]);
     await run('DELETE FROM customers WHERE phone_digits IN (?, ?)', [bareDigits, inDigits]);
   });
 
@@ -300,8 +304,10 @@ describe('Storefront read APIs', () => {
     expect(banners.body.length).toBe(billboards.body.length);
   });
 
-  test('storefront order creation works without auth', async () => {
-    const res = await request(app)
+  test('storefront order creation requires a signed-in customer account', async () => {
+    // Guests cannot place orders — checkout is gated behind sign-in so every
+    // order lands in a customer's order history.
+    await request(app)
       .post('/api/orders')
       .send({
         customer_name: 'Test Customer',
@@ -313,19 +319,31 @@ describe('Storefront read APIs', () => {
         total_price: 500,
         items: [{ product_id: 1, name: 'Organic Sugarcane Jaggery Cubes', weight: '500g', quantity: 1, price: 180 }],
       })
-      .expect(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.orderId).toBeDefined();
+      .expect(401);
+
+    // Catalog browsing stays public.
+    await request(app).get('/api/products').expect(200);
   });
 
   test('public order endpoint sanitizes map_link and tolerates malformed items', async () => {
     const loginRes = await request(app).post('/api/admin/login').send(ADMIN_USER).expect(200);
     const cookie = loginRes.headers['set-cookie'];
 
+    // A signed-in customer session (orders are customer-scoped now).
+    // Pre-cleanup: an earlier failed run may have left the account behind.
+    const custKey = '9876540001';
+    await run('DELETE FROM customers WHERE phone_digits = ?', [custKey]);
+    const cust = await request(app)
+      .post('/api/account/register')
+      .send({ full_name: 'Sanitize Customer', phone: '+91 98765 40001', password: 'Password123!' })
+      .expect(200);
+    const custCookie = cust.headers['set-cookie'];
+
     // javascript: scheme must be dropped; https link preserved; null/non-object
     // items and non-integer product_id must not hang the request or throw.
     const created = await request(app)
       .post('/api/orders')
+      .set('Cookie', custCookie)
       .send({
         customer_name: 'Sanitize Test',
         phone: '9876500000',
@@ -353,6 +371,7 @@ describe('Storefront read APIs', () => {
     // https map_link is preserved
     const ok = await request(app)
       .post('/api/orders')
+      .set('Cookie', custCookie)
       .send({
         customer_name: 'Sanitize Test Two',
         phone: '9876500001',
@@ -371,9 +390,22 @@ describe('Storefront read APIs', () => {
 
     await request(app).delete(`/api/orders/${orderId}`).set('Cookie', cookie).expect(200);
     await request(app).delete(`/api/orders/${ok.body.orderId}`).set('Cookie', cookie).expect(200);
+
+    // Cleanup the test customer
+    await run('DELETE FROM customers WHERE phone_digits = ?', [custKey]);
   });
 
   test('COD checkout stores full customer details, location pin, and rejects invalid data', async () => {
+    // Orders are customer-scoped: sign in first (the sign-in gate is covered
+    // separately above; here we exercise the validated COD payload).
+    const codKey = '9876543211';
+    await run('DELETE FROM customers WHERE phone_digits = ?', [codKey]);
+    const cust = await request(app)
+      .post('/api/account/register')
+      .send({ full_name: 'COD Customer', phone: '+91 98765 43211', password: 'Password123!' })
+      .expect(200);
+    const custCookie = cust.headers['set-cookie'];
+
     const orderPayload = {
       customer_name: 'COD Checkout Test',
       phone: '+91 98765 43210',
@@ -391,7 +423,7 @@ describe('Storefront read APIs', () => {
       items: [{ product_id: 1, name: 'Organic Sugarcane Jaggery Cubes', weight: '500g', quantity: 1, price: 180 },
               { product_id: 6, name: 'Traditional Bilona A2 Desi Gir Cow Ghee', weight: '500ml', quantity: 1, price: 250 }],
     };
-    const created = await request(app).post('/api/orders').send(orderPayload).expect(200);
+    const created = await request(app).post('/api/orders').set('Cookie', custCookie).send(orderPayload).expect(200);
     expect(created.body.success).toBe(true);
     const orderId = created.body.orderId;
 
@@ -420,7 +452,7 @@ describe('Storefront read APIs', () => {
 
     // Validation: each bad payload is rejected with 400 and a helpful message
     const bad = (field, override) =>
-      request(app).post('/api/orders').send({ ...orderPayload, ...override }).then(res => {
+      request(app).post('/api/orders').set('Cookie', custCookie).send({ ...orderPayload, ...override }).then(res => {
         expect(res.status).toBe(400);
         expect(res.body.success).toBe(false);
         expect(res.body.errors.join(' ')).toMatch(field);
@@ -432,6 +464,9 @@ describe('Storefront read APIs', () => {
     await bad(/postal/i, { pincode: '##' }); // non-alphanumeric postal code
     await bad(/email/i, { email: 'not-an-email' });
     await bad(/coordinates/i, { latitude: 999, longitude: 0 });
+
+    // Cleanup the test customer
+    await run('DELETE FROM customers WHERE phone_digits = ?', [codKey]);
   });
 
   test('admin can set a product image via direct URL and it reaches the storefront', async () => {

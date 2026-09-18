@@ -37,7 +37,10 @@
     .status-badge { padding: 3px 12px; border-radius: 999px; font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
     .status-pending { background: rgba(196,148,61,.15); color: #8a6420; }
     .status-confirmed { background: rgba(45,106,79,.12); color: #2D6A4F; }
+    .status-processing { background: rgba(43,90,158,.12); color: #2b5a9e; }
+    .status-packed { background: rgba(122,90,43,.14); color: #7a5a2b; }
     .status-shipped { background: rgba(43,90,158,.12); color: #2b5a9e; }
+    .status-out_for_delivery { background: rgba(142,68,173,.12); color: #8e44ad; }
     .status-delivered { background: rgba(45,106,79,.2); color: #1B4332; }
     .status-cancelled { background: rgba(192,57,43,.12); color: #c0392b; }
     .order-items { margin-top: 10px; font-size: .9rem; color: var(--green-dark); }
@@ -71,7 +74,7 @@
           <!-- Signed out: auth forms -->
           <div id="auth-view" class="hidden">
             <h1 style="margin-bottom: 6px;">Welcome to Celestial Good</h1>
-            <p style="color: var(--gray, #7a8a80); margin-bottom: 20px;">Sign in to see your profile and order history — or order as a guest any time.</p>
+            <p style="color: var(--gray, #7a8a80); margin-bottom: 20px;">Sign in to see your profile and order history — or order as a guest any time. <span id="checkout-gate-note" class="hidden" style="color: var(--green-mid); font-weight: 600;">Sign in to complete your checkout — your cart is waiting.</span></p>
             <div class="auth-tabs" role="tablist">
               <button type="button" class="auth-tab active" id="tab-signin" role="tab" aria-selected="true">Sign In</button>
               <button type="button" class="auth-tab" id="tab-register" role="tab" aria-selected="false">Create Account</button>
@@ -145,6 +148,18 @@
 
     var customer = null;
 
+    // Checkout flow: the shop sends customers here with ?next=checkout; after a
+    // successful sign-in / registration, return to /shop.html?checkout=1 so the
+    // checkout modal reopens automatically with the cart intact.
+    var wantsCheckout = new URLSearchParams(window.location.search).get("next") === "checkout";
+    function returnToCheckout(){
+      window.location.href = "/shop.html?checkout=1";
+    }
+    if (wantsCheckout) {
+      var gateNote = document.getElementById("checkout-gate-note");
+      if (gateNote) gateNote.classList.remove("hidden");
+    }
+
     function renderProfile(c){
       var address = [c.address, c.landmark, c.city, c.state, c.postal_code, c.country].filter(Boolean).join(", ") || "<em>Not saved yet</em>";
       $("#profile-card").innerHTML =
@@ -177,9 +192,10 @@
           return '<div class="oi"><span>' + esc(i.quantity) + '× ' + esc(i.product_name) + (i.weight ? ' (' + esc(i.weight) + ')' : '') + '</span><span>' + formatINR((Number(i.price)||0) * (Number(i.quantity)||0)) + '</span></div>';
         }).join("") || '<div class="oi"><em>no items recorded</em></div>';
         var status = String(o.status || "pending");
+        var statusLabels = { pending: "Pending", confirmed: "Confirmed", processing: "Processing", packed: "Packed", shipped: "Shipped", out_for_delivery: "Out for delivery", delivered: "Delivered", cancelled: "Cancelled" };
         return '<div class="order-card">' +
           '<div class="order-head"><span class="order-id">#CG-' + esc(o.id) + '</span>' +
-          '<span class="status-badge status-' + esc(status) + '">' + esc(status) + '</span></div>' +
+          '<span class="status-badge status-' + esc(status) + '">' + esc(statusLabels[status] || status) + '</span></div>' +
           '<div class="order-date">' + (o.created_at ? new Date(o.created_at).toLocaleString() : "") + (o.is_paid ? ' · <span class="paid-flag">Paid ✓</span>' : ' · <span class="paid-flag">Cash on Delivery</span>') + '</div>' +
           '<div class="order-items">' + items + '</div>' +
           '<div class="order-total"><span>Total</span><span>' + formatINR(o.total_price) + '</span></div>' +
@@ -245,6 +261,7 @@
           body: JSON.stringify({ phone: $("#li-phone").value, password: $("#li-pass").value }) });
         var d = await r.json().catch(function(){ return {}; });
         if (!r.ok || !d.success) throw new Error(d.message || "Sign in failed.");
+        if (wantsCheckout) { returnToCheckout(); return; }
         var me = await (await fetch("/api/account/me")).json();
         showProfile(me.customer);
         toast("Welcome back!");
@@ -260,6 +277,7 @@
           body: JSON.stringify({ full_name: $("#re-name").value, phone: $("#re-phone").value, email: $("#re-email").value, password: $("#re-pass").value }) });
         var d = await r.json().catch(function(){ return {}; });
         if (!r.ok || !d.success) throw new Error(d.message || "Could not create your account.");
+        if (wantsCheckout) { returnToCheckout(); return; }
         var me = await (await fetch("/api/account/me")).json();
         showProfile(me.customer);
         toast("Account created!");

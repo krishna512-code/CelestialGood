@@ -728,9 +728,19 @@ app.get('/api/orders', requireAuth, async (req, res) => {
   res.json(withItems);
 });
 
-// COD checkout: the storefront form posts the customer's details here (no auth).
-// Only COD is supported today; payment_method is forced server-side.
+// COD checkout: the storefront form posts the customer's details here.
+// Sign-in is required: every order belongs to a customer account so the order
+// history in My Account is always complete. Guest checkout is no longer
+// supported; only COD payment is supported today (payment_method forced server-side).
+const ORDER_STATUSES = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
+
 app.post('/api/orders', async (req, res) => {
+  // Gate: an unsigned-in visitor cannot place an order. The storefront checks
+  // this before opening checkout and redirects to the sign-in page; this 401
+  // is the server-side backstop (signInRequired lets the UI show the right message).
+  if (!req.account?.customerId) {
+    return res.status(401).json({ success: false, signInRequired: true, message: 'Please sign in to place your order.' });
+  }
   const b = req.body || {};
   const items = Array.isArray(b.items) ? b.items : [];
 
@@ -802,8 +812,16 @@ app.post('/api/orders', async (req, res) => {
 
 app.put('/api/orders/:id/status', requireAuth, async (req, res) => {
   const { status, is_paid } = req.body || {};
-  if (status !== undefined) await run('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id]);
-  if (is_paid !== undefined) await run('UPDATE orders SET is_paid = ? WHERE id = ?', [is_paid ? 1 : 0, req.params.id]);
+  const id = req.params.id;
+  const order = await queryOne('SELECT id FROM orders WHERE id = ?', [id]);
+  if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+  if (status !== undefined) {
+    if (!ORDER_STATUSES.includes(status)) {
+      return res.status(400).json({ success: false, message: `Invalid status "${String(status).slice(0, 40)}". Allowed: ${ORDER_STATUSES.join(', ')}.` });
+    }
+    await run('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+  }
+  if (is_paid !== undefined) await run('UPDATE orders SET is_paid = ? WHERE id = ?', [is_paid ? 1 : 0, id]);
   res.json({ success: true, message: 'Order updated.' });
 });
 

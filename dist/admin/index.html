@@ -83,7 +83,7 @@
         <label>Hero Subtitle</label><input type="text" id="set-hero_subtitle" placeholder="Hero subtitle">
         <label>Hero Description</label><textarea id="set-hero_description" placeholder="Hero description"></textarea>
         <label>Announcement Bar</label><input type="text" id="set-announcement_text" placeholder="Announcement text">
-        <label>WhatsApp Number</label><input type="text" id="set-whatsapp_number" placeholder="WhatsApp number">
+        <label>WhatsApp Number (contact only — not used for ordering)</label><input type="text" id="set-whatsapp_number" placeholder="WhatsApp number">
         <label>Email</label><input type="text" id="set-email" placeholder="Email">
         <label>Footer Description</label><textarea id="set-footer_description" placeholder="Footer description"></textarea>
         <label>Copyright Text</label><input type="text" id="set-copyright_text" placeholder="Copyright">
@@ -97,6 +97,17 @@
       <h2>Customer Orders</h2>
       <div class="flex-row" style="margin-bottom: 12px;">
         <button class="admin-btn" onclick="loadOrders()">🔄 Refresh</button>
+        <select id="order-status-filter" onchange="renderOrdersTable()" style="padding:6px 10px;border-radius:8px;border:1px solid #ccc;">
+          <option value="all">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="processing">Processing</option>
+          <option value="packed">Packed</option>
+          <option value="shipped">Shipped</option>
+          <option value="out_for_delivery">Out for delivery</option>
+          <option value="delivered">Delivered</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
         <span id="ordersCount" style="color:#1B4332; font-weight:600;"></span>
       </div>
       <table class="admin-table"><thead><tr><th>#</th><th>Customer & Address</th><th>Items</th><th>Total</th><th>Phone</th><th>Payment</th><th>Status</th><th>Paid</th><th>Date</th><th>Actions</th></tr></thead><tbody id="ordersTable"></tbody></table>
@@ -492,28 +503,38 @@
     async function deleteTestimonial(id) { await api(`/api/testimonials/${id}`, {method:'DELETE'}, 'Deleted'); loadAllData(); }
     async function deleteFAQ(id) { await api(`/api/faq/${id}`, {method:'DELETE'}, 'Deleted'); loadAllData(); }
 
+    const ORDER_STATUSES = ['pending','confirmed','processing','packed','shipped','out_for_delivery','delivered','cancelled'];
+    const STATUS_LABELS = { pending: 'Pending', confirmed: 'Confirmed', processing: 'Processing', packed: 'Packed', shipped: 'Shipped', out_for_delivery: 'Out for delivery', delivered: 'Delivered', cancelled: 'Cancelled' };
+    let allOrders = [];
+
     async function loadOrders() {
       try {
         const r = await fetch('/api/orders');
         if (r.status === 401) { showLogin(); return; }
-        const orders = await r.json();
-        document.getElementById('ordersCount').textContent = orders.length + ' order(s)';
-        document.getElementById('ordersTable').innerHTML = orders.map(o => {
-          const items = (o.items || []).map(i => `${Number(i.quantity) || 0}× ${esc(i.product_name)}${i.weight ? ' (' + esc(i.weight) + ')' : ''}`).join('<br>') || '<em>no items</em>';
-          const statusOpts = ['pending','confirmed','shipped','delivered','cancelled'].map(s => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s}</option>`).join('');
-          const date = o.created_at ? new Date(o.created_at).toLocaleString() : '';
-          const address = [o.address, o.landmark, o.city, o.state, o.pincode ? '-' + o.pincode : ''].filter(Boolean).map(esc).join(', ') || '<em>—</em>';
-          const emailLine = o.email ? `<br><small>✉️ ${esc(o.email)}</small>` : '';
-          const notesLine = o.notes ? `<br><small>📝 ${esc(o.notes)}</small>` : '';
-          const mapLine = o.map_link
-            ? `<br><a href="${esc(safeUrl(o.map_link))}" target="_blank" rel="noopener noreferrer" style="color:#2D6A4F;font-weight:600;">📍 Map pin${o.latitude != null ? ' (' + Number(o.latitude).toFixed(5) + ', ' + Number(o.longitude).toFixed(5) + ')' : ''}</a>`
-            : '';
-          const payBadge = esc((o.payment_method || 'cod').toUpperCase());
-          return `<tr><td>${esc(o.id)}</td><td><strong>${esc(o.customer_name)}</strong>${emailLine}<br><small>${address}</small>${notesLine}${mapLine}</td><td>${items}</td><td>₹${esc(o.total_price)}</td><td>${esc(o.phone)}</td><td><span style="background:rgba(196,148,61,.15);color:#8a6420;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700;">${payBadge}</span></td><td><select onchange="updateOrderStatus(${esc(o.id)}, this.value)">${statusOpts}</select></td><td><input type="checkbox" ${o.is_paid ? 'checked' : ''} onchange="updateOrderPaid(${esc(o.id)}, this.checked)"></td><td><small>${date}</small></td><td><button class="admin-btn admin-btn-danger" onclick="deleteOrder(${esc(o.id)})">Delete</button></td></tr>`;
-        }).join('') || '<tr><td colspan="10"><em>No orders yet.</em></td></tr>';
+        allOrders = await r.json();
+        renderOrdersTable();
       } catch (e) {
         showToast('⚠️ Failed to load orders');
       }
+    }
+
+    function renderOrdersTable() {
+      const filter = document.getElementById('order-status-filter').value;
+      const orders = filter === 'all' ? allOrders : allOrders.filter(o => (o.status || 'pending') === filter);
+      document.getElementById('ordersCount').textContent = orders.length + ' of ' + allOrders.length + ' order(s)';
+      document.getElementById('ordersTable').innerHTML = orders.map(o => {
+        const items = (o.items || []).map(i => `${Number(i.quantity) || 0}× ${esc(i.product_name)}${i.weight ? ' (' + esc(i.weight) + ')' : ''}`).join('<br>') || '<em>no items</em>';
+        const statusOpts = ORDER_STATUSES.map(s => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${STATUS_LABELS[s]}</option>`).join('');
+        const date = o.created_at ? new Date(o.created_at).toLocaleString() : '';
+        const address = [o.address, o.landmark, o.city, o.state, o.pincode ? '-' + o.pincode : ''].filter(Boolean).map(esc).join(', ') || '<em>—</em>';
+        const emailLine = o.email ? `<br><small>✉️ ${esc(o.email)}</small>` : '';
+        const notesLine = o.notes ? `<br><small>📝 ${esc(o.notes)}</small>` : '';
+        const mapLine = o.map_link
+          ? `<br><a href="${esc(safeUrl(o.map_link))}" target="_blank" rel="noopener noreferrer" style="color:#2D6A4F;font-weight:600;">📍 Map pin${o.latitude != null ? ' (' + Number(o.latitude).toFixed(5) + ', ' + Number(o.longitude).toFixed(5) + ')' : ''}</a>`
+          : '';
+        const payBadge = esc((o.payment_method || 'cod').toUpperCase());
+        return `<tr><td>${esc(o.id)}</td><td><strong>${esc(o.customer_name)}</strong>${emailLine}<br><small>${address}</small>${notesLine}${mapLine}</td><td>${items}</td><td>₹${esc(o.total_price)}</td><td>${esc(o.phone)}</td><td><span style="background:rgba(196,148,61,.15);color:#8a6420;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700;">${payBadge}</span></td><td><select onchange="updateOrderStatus(${esc(o.id)}, this.value)">${statusOpts}</select></td><td><input type="checkbox" ${o.is_paid ? 'checked' : ''} onchange="updateOrderPaid(${esc(o.id)}, this.checked)"></td><td><small>${date}</small></td><td><button class="admin-btn admin-btn-danger" onclick="deleteOrder(${esc(o.id)})">Delete</button></td></tr>`;
+      }).join('') || '<tr><td colspan="10"><em>No orders in this view.</em></td></tr>';
     }
     async function updateOrderStatus(id, status) { await api(`/api/orders/${id}/status`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ status }) }, 'Order status updated'); }
     async function updateOrderPaid(id, is_paid) { await api(`/api/orders/${id}/status`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ is_paid }) }, 'Payment flag updated'); }
